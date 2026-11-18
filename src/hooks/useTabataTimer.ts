@@ -139,13 +139,13 @@ export function useTabataTimer(settings: TabataSettings): UseTabataTimerResult {
   }, [stopLoop, tick])
 
   const start = useCallback(async () => {
-    await unlockAudio()
-    playBeep('phase')
+    void unlockAudio()
     setStatus('running')
     setPhaseIndex(0)
     setPhaseRemaining(phases[0]?.duration ?? 0)
     setElapsedInWorkout(0)
     startLoop()
+    playBeep('phase')
   }, [phases, startLoop])
 
   const pause = useCallback(() => {
@@ -154,7 +154,7 @@ export function useTabataTimer(settings: TabataSettings): UseTabataTimerResult {
   }, [stopLoop])
 
   const resume = useCallback(async () => {
-    await unlockAudio()
+    void unlockAudio()
     setStatus('running')
     startLoop()
   }, [startLoop])
