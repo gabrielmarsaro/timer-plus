@@ -838,14 +838,120 @@ button.phase-block:not(:disabled) {
   color: var(--accent);
 }
 
-.edit-field {
-  padding: 14px 16px 18px;
-  border-bottom: 1px solid #1a1a1a;
+.edit-sheet-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
-.edit-field-label {
-  margin-bottom: 12px;
-  letter-spacing: 0.05em;
+.edit-rows {
+  border-top: 1px solid #1a1a1a;
+}
+
+.edit-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #1a1a1a;
+  letter-spacing: 0.04em;
+  text-align: left;
+}
+
+.edit-row strong {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.edit-row.is-selected {
+  background: #141414;
+}
+
+.edit-row.is-selected strong {
+  color: #fff;
+}
+
+.wheel-panel {
+  margin-top: auto;
+  padding: 16px 12px 24px;
+  border-top: 1px solid #222;
+  background: linear-gradient(180deg, #0d0d0d, #000);
+}
+
+.wheel-panel-title {
+  text-align: center;
+  margin-bottom: 10px;
+  color: #9a9a9a;
+  letter-spacing: 0.06em;
+  font-size: 0.85rem;
+}
+
+.duration-wheel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.wheel {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #111;
+  border: 1px solid #222;
+  touch-action: pan-y;
+}
+
+.wheel-highlight {
+  pointer-events: none;
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 50%;
+  height: 40px;
+  transform: translateY(-50%);
+  border-radius: 10px;
+  border: 1px solid rgba(182, 255, 60, 0.35);
+  background: rgba(182, 255, 60, 0.08);
+  z-index: 2;
+}
+
+.wheel-scroller {
+  height: 100%;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 18%,
+    #000 82%,
+    transparent 100%
+  );
+}
+
+.wheel-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.wheel-item {
+  display: grid;
+  place-items: center;
+  scroll-snap-align: center;
+  color: #666;
+  font-size: 1.15rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  transition: color 120ms ease, transform 120ms ease;
+}
+
+.wheel-item.is-active {
+  color: #fff;
+  transform: scale(1.08);
 }
 
 .stat-spacer {

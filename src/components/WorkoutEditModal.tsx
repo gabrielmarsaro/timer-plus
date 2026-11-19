@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { CountWheel, DurationWheel } from './WheelPicker'
 import type { RoundsSettings, TabataSettings } from '../types'
 
 type Mode = 'tabata' | 'rounds'
@@ -39,15 +40,11 @@ interface WorkoutEditModalProps {
   onSave: (settings: AnySettings) => void
 }
 
-function formatValue(value: number, count?: boolean): string {
+function formatPreview(value: number, count?: boolean): string {
   if (count) return String(value)
   const mins = Math.floor(value / 60)
   const secs = value % 60
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value))
 }
 
 export function WorkoutEditModal({
@@ -58,19 +55,24 @@ export function WorkoutEditModal({
   onSave,
 }: WorkoutEditModalProps) {
   const [draft, setDraft] = useState(settings)
+  const [activeKey, setActiveKey] = useState<string | null>(null)
   const fields = mode === 'tabata' ? TABATA_FIELDS : ROUNDS_FIELDS
 
   useEffect(() => {
-    if (open) setDraft(settings)
-  }, [open, settings])
+    if (!open) return
+    setDraft(settings)
+    setActiveKey(fields[0]?.key ?? null)
+  }, [open, settings, fields])
 
   if (!open) return null
 
-  const bump = (key: string, delta: number, min: number, max: number) => {
-    setDraft((prev) => {
-      const current = Number((prev as unknown as Record<string, number>)[key] ?? 0)
-      return { ...prev, [key]: clamp(current + delta, min, max) }
-    })
+  const activeField = fields.find((field) => field.key === activeKey) ?? fields[0]
+  const activeValue = Number(
+    (draft as unknown as Record<string, number>)[activeField.key] ?? activeField.min,
+  )
+
+  const setValue = (key: string, value: number) => {
+    setDraft((prev) => ({ ...prev, [key]: value }))
   }
 
   const finish = () => {
@@ -87,38 +89,52 @@ export function WorkoutEditModal({
         </button>
       </header>
 
-      <div className="native-sheet-body">
+      <div className="native-sheet-body edit-sheet-body">
         <p className="edit-intro">
-          Ajuste os tempos e a quantidade. Toque em <strong>CONCLUÍDO</strong> para guardar.
+          Escolha um item e <strong>deslize</strong> o seletor, como no iPhone. Depois toque em
+          CONCLUÍDO.
         </p>
 
-        {fields.map((field) => {
-          const value = Number((draft as unknown as Record<string, number>)[field.key] ?? 0)
-          return (
-            <div key={field.key} className="edit-field">
-              <div className="edit-field-label">{field.label}</div>
-              <div className="stepper">
-                <button
-                  type="button"
-                  className="stepper-btn"
-                  aria-label={`Diminuir ${field.label}`}
-                  onClick={() => bump(field.key, -field.step, field.min, field.max)}
-                >
-                  −
-                </button>
-                <div className="stepper-value">{formatValue(value, field.count)}</div>
-                <button
-                  type="button"
-                  className="stepper-btn"
-                  aria-label={`Aumentar ${field.label}`}
-                  onClick={() => bump(field.key, field.step, field.min, field.max)}
-                >
-                  +
-                </button>
-              </div>
-            </div>
-          )
-        })}
+        <div className="edit-rows">
+          {fields.map((field) => {
+            const value = Number((draft as unknown as Record<string, number>)[field.key] ?? 0)
+            const selected = field.key === activeField.key
+            return (
+              <button
+                key={field.key}
+                type="button"
+                className={`edit-row${selected ? ' is-selected' : ''}`}
+                onClick={() => setActiveKey(field.key)}
+              >
+                <span>{field.label}</span>
+                <strong>{formatPreview(value, field.count)}</strong>
+              </button>
+            )
+          })}
+        </div>
+
+        <div className="wheel-panel">
+          <div className="wheel-panel-title">{activeField.label}</div>
+          {activeField.count ? (
+            <CountWheel
+              label={activeField.label}
+              value={activeValue}
+              min={activeField.min}
+              max={activeField.max}
+              step={activeField.step}
+              onChange={(value) => setValue(activeField.key, value)}
+            />
+          ) : (
+            <DurationWheel
+              label={activeField.label}
+              value={activeValue}
+              min={activeField.min}
+              max={activeField.max}
+              step={activeField.step}
+              onChange={(value) => setValue(activeField.key, value)}
+            />
+          )}
+        </div>
       </div>
     </div>
   )
