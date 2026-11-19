@@ -862,3 +862,54 @@ html[data-allow-rotation='false'] body {
     border-inline: 1px solid #1a1a1a;
   }
 }
+
+/* Tema cores claras */
+.app-shell.theme-light {
+  background: #f3f3f3;
+  color: #111;
+}
+
+.app-shell.theme-light .tabata-header,
+.app-shell.theme-light .controls-row,
+.app-shell.theme-light .bottom-nav {
+  background: #f3f3f3;
+}
+
+.app-shell.theme-light .header-center h1,
+.app-shell.theme-light .total-time,
+.app-shell.theme-light .play-label,
+.app-shell.theme-light .icon-btn,
+.app-shell.theme-light .timer-edit-btn {
+  color: #111 !important;
+}
+
+.app-shell.theme-light .stat-label {
+  color: #222;
+}
+
+.app-shell.theme-light .nav-item {
+  color: #555;
+}
+
+.app-shell.theme-light .nav-item.is-active {
+  color: #111;
+}
+
+.app-shell.theme-light .nav-item.is-active .nav-icon-wrap {
+  background: #ddd;
+}
+
+.app-shell.theme-light .reset-btn {
+  background: #e8e8e8;
+  color: #222;
+  box-shadow: inset 0 0 0 1px #ccc;
+}
+
+.app-shell.theme-light .native-sheet,
+.app-shell.theme-light .bottom-nav {
+  border-color: #ddd;
+}
+
+html[data-light-colors='true'] body {
+  background: #f3f3f3;
+}

@@ -1,4 +1,4 @@
-import { formatTime } from '../lib/format'
+import { formatTime, type TimeFormat } from '../lib/format'
 import type { TimerStatus } from '../hooks/usePhaseTimer'
 import type { Phase } from '../types'
 import {
@@ -18,6 +18,7 @@ interface TabataScreenProps {
   roundsLeft: number
   cyclesLeft: number
   idleWorkDuration: number
+  timeFormat: TimeFormat
   onOpenGeneralSettings: () => void
   onOpenWorkoutEdit: () => void
   onToggle: () => void
@@ -33,6 +34,7 @@ export function TabataScreen({
   roundsLeft,
   cyclesLeft,
   idleWorkDuration,
+  timeFormat,
   onOpenGeneralSettings,
   onOpenWorkoutEdit,
   onToggle,
@@ -42,12 +44,12 @@ export function TabataScreen({
     status === 'idle'
       ? {
           label: 'PREPARAR',
-          time: formatTime(phaseRemaining),
+          time: formatTime(phaseRemaining, timeFormat),
           color: '#f5e600',
         }
       : {
           label: currentPhase?.label ?? 'PREPARAR',
-          time: formatTime(phaseRemaining),
+          time: formatTime(phaseRemaining, timeFormat),
           color: currentPhase?.color ?? '#f5e600',
         }
 
@@ -55,18 +57,18 @@ export function TabataScreen({
     status === 'idle'
       ? {
           label: 'EXERCÍCIO',
-          time: formatTime(idleWorkDuration),
+          time: formatTime(idleWorkDuration, timeFormat),
           color: '#9dff4a',
         }
       : nextPhase
         ? {
             label: nextPhase.label,
-            time: formatTime(nextPhase.duration),
+            time: formatTime(nextPhase.duration, timeFormat),
             color: nextPhase.color,
           }
         : {
             label: 'FIM',
-            time: '00:00',
+            time: formatTime(0, timeFormat),
             color: '#333333',
           }
 
@@ -88,7 +90,7 @@ export function TabataScreen({
 
         <div className="header-center">
           <h1>TABATA</h1>
-          <p className="total-time">{formatTime(totalRemaining)}</p>
+          <p className="total-time">{formatTime(totalRemaining, timeFormat)}</p>
         </div>
 
         <div className="header-right">

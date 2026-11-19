@@ -1,6 +1,6 @@
 import { Capacitor } from '@capacitor/core'
 import { StatusBar, Style } from '@capacitor/status-bar'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { BottomNav } from './components/BottomNav'
 import { GeneralSettingsModal } from './components/GeneralSettingsModal'
 import { PlaceholderScreen } from './components/PlaceholderScreen'
@@ -9,13 +9,20 @@ import { TabataScreen } from './components/TabataScreen'
 import { WorkoutEditModal } from './components/WorkoutEditModal'
 import { usePhaseTimer } from './hooks/usePhaseTimer'
 import { useWakeLock } from './hooks/useWakeLock'
-import { setAudioPreferences } from './lib/beep'
+import {
+  announceDone,
+  configureFeedback,
+  feedbackPhaseStart,
+  onCountdownSecond,
+  unlockFeedback,
+} from './lib/feedback'
 import { buildPhases, buildRoundsPhases } from './lib/buildPhases'
 import {
   DEFAULT_GENERAL_SETTINGS,
   DEFAULT_ROUNDS_SETTINGS,
   DEFAULT_SETTINGS,
   type GeneralSettings,
+  type Phase,
   type RoundsSettings,
   type Tab,
   type TabataSettings,
@@ -35,6 +42,22 @@ function loadJson<T>(key: string, fallback: T): T {
   }
 }
 
+async function lockOrientation(allowRotation: boolean): Promise<void> {
+  try {
+    const orientation = screen.orientation as ScreenOrientation & {
+      lock?: (orientation: string) => Promise<void>
+      unlock?: () => void
+    }
+    if (allowRotation) {
+      orientation.unlock?.()
+      return
+    }
+    await orientation.lock?.('portrait')
+  } catch {
+    // Orientation lock is best-effort on browsers/tablets.
+  }
+}
+
 export default function App() {
   const [tab, setTab] = useState<Tab>('tabata')
   const [tabataSettings, setTabataSettings] = useState<TabataSettings>(() =>
@@ -50,16 +73,58 @@ export default function App() {
   const [workoutEditOpen, setWorkoutEditOpen] = useState(false)
   const [screenFlash, setScreenFlash] = useState(false)
 
+  const flashScreen = useCallback(() => {
+    if (!generalSettings.screenFlash) return
+    setScreenFlash(true)
+    window.setTimeout(() => setScreenFlash(false), 160)
+  }, [generalSettings.screenFlash])
+
+  const handlePhaseEvent = useCallback(
+    (phase: Phase, next: Phase | null) => {
+      flashScreen()
+      feedbackPhaseStart(phase, next)
+    },
+    [flashScreen],
+  )
+
+  const handleSecond = useCallback(
+    (remaining: number, phase: Phase) => {
+      const warning =
+        tab === 'rounds'
+          ? roundsSettings.warning
+          : phase.kind === 'work'
+            ? 10
+            : 0
+      onCountdownSecond(remaining, phase, warning)
+    },
+    [roundsSettings.warning, tab],
+  )
+
   const tabataPhases = useMemo(() => buildPhases(tabataSettings), [tabataSettings])
   const roundsPhases = useMemo(() => buildRoundsPhases(roundsSettings), [roundsSettings])
 
   const tabata = usePhaseTimer(tabataPhases, {
     totalRounds: tabataSettings.rounds,
     totalCycles: tabataSettings.cycles,
+    onStart: handlePhaseEvent,
+    onPhaseChange: handlePhaseEvent,
+    onSecond: handleSecond,
+    onComplete: () => {
+      flashScreen()
+      announceDone()
+    },
   })
+
   const rounds = usePhaseTimer(roundsPhases, {
     totalRounds: roundsSettings.rounds,
     totalCycles: 1,
+    onStart: handlePhaseEvent,
+    onPhaseChange: handlePhaseEvent,
+    onSecond: handleSecond,
+    onComplete: () => {
+      flashScreen()
+      announceDone()
+    },
   })
 
   const activeRunning =
@@ -78,59 +143,57 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem(GENERAL_KEY, JSON.stringify(generalSettings))
-    setAudioPreferences({
-      soundEffect: generalSettings.soundEffect,
-      volume: generalSettings.volume,
-      vibration: generalSettings.vibration,
-      ticking: generalSettings.ticking,
-    })
+    configureFeedback(generalSettings)
     document.documentElement.dataset.lightColors = generalSettings.lightColors
       ? 'true'
       : 'false'
-    document.documentElement.dataset.allowRotation = generalSettings.rotation
-      ? 'true'
-      : 'false'
+    void lockOrientation(generalSettings.rotation)
   }, [generalSettings])
 
   useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return
-    void StatusBar.setStyle({ style: Style.Dark })
-    void StatusBar.setBackgroundColor({ color: '#000000' })
+    const warmVoices = () => {
+      try {
+        window.speechSynthesis?.getVoices()
+      } catch {
+        // ignore
+      }
+    }
+    warmVoices()
+    window.speechSynthesis?.addEventListener?.('voiceschanged', warmVoices)
+    return () => window.speechSynthesis?.removeEventListener?.('voiceschanged', warmVoices)
   }, [])
 
-  // Screen flash on phase change
-  const phaseKey =
-    tab === 'rounds'
-      ? `${rounds.status}-${rounds.currentPhase?.label}-${Math.ceil(rounds.phaseRemaining)}`
-      : `${tabata.status}-${tabata.currentPhase?.label}-${Math.ceil(tabata.phaseRemaining)}`
-
   useEffect(() => {
-    if (!generalSettings.screenFlash) return
-    const timer = tab === 'rounds' ? rounds : tabata
-    if (timer.status !== 'running') return
-    if (timer.phaseRemaining > (timer.currentPhase?.duration ?? 0) - 0.25) {
-      setScreenFlash(true)
-      const id = window.setTimeout(() => setScreenFlash(false), 180)
-      return () => window.clearTimeout(id)
-    }
-  }, [phaseKey, generalSettings.screenFlash, rounds, tab, tabata])
+    if (!Capacitor.isNativePlatform()) return
+    void StatusBar.setStyle({
+      style: generalSettings.lightColors ? Style.Light : Style.Dark,
+    })
+    void StatusBar.setBackgroundColor({
+      color: generalSettings.lightColors ? '#f4f4f4' : '#000000',
+    })
+  }, [generalSettings.lightColors])
 
   const makeToggle =
     (timer: typeof tabata) =>
-    () => {
+    async () => {
+      await unlockFeedback()
       if (timer.status === 'running') {
         timer.pause()
         return
       }
       if (timer.status === 'paused') {
-        void timer.resume()
+        await timer.resume()
         return
       }
-      void timer.start()
+      await timer.start()
     }
 
   return (
-    <div className={`app-shell${screenFlash ? ' is-flashing' : ''}`}>
+    <div
+      className={`app-shell${screenFlash ? ' is-flashing' : ''}${
+        generalSettings.lightColors ? ' theme-light' : ''
+      }`}
+    >
       <main className="app-main">
         {tab === 'tabata' && (
           <TabataScreen
@@ -144,9 +207,10 @@ export default function App() {
             roundsLeft={tabata.roundsLeft}
             cyclesLeft={tabata.cyclesLeft}
             idleWorkDuration={tabataSettings.work}
+            timeFormat={generalSettings.timeFormat}
             onOpenGeneralSettings={() => setGeneralOpen(true)}
             onOpenWorkoutEdit={() => setWorkoutEditOpen(true)}
-            onToggle={makeToggle(tabata)}
+            onToggle={() => void makeToggle(tabata)()}
             onReset={tabata.reset}
           />
         )}
@@ -161,9 +225,10 @@ export default function App() {
             roundsLeft={rounds.roundsLeft}
             idlePrepare={roundsSettings.prepare}
             idleRoundDuration={roundsSettings.round}
+            timeFormat={generalSettings.timeFormat}
             onOpenGeneralSettings={() => setGeneralOpen(true)}
             onOpenWorkoutEdit={() => setWorkoutEditOpen(true)}
-            onToggle={makeToggle(rounds)}
+            onToggle={() => void makeToggle(rounds)()}
             onReset={rounds.reset}
           />
         )}
@@ -189,8 +254,8 @@ export default function App() {
         <GeneralSettingsModal
           open={generalOpen}
           settings={generalSettings}
+          onChange={setGeneralSettings}
           onClose={() => setGeneralOpen(false)}
-          onSave={setGeneralSettings}
         />
       ) : null}
 

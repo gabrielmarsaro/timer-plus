@@ -34,7 +34,7 @@ export interface GeneralSettings {
   screenFlash: boolean
   rotation: boolean
   lightColors: boolean
-  timeFormat: 'mmss'
+  timeFormat: 'mmss' | 'm_ss' | 'ss'
 }
 
 export interface Phase {
@@ -67,14 +67,14 @@ export const DEFAULT_ROUNDS_SETTINGS: RoundsSettings = {
 export const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   soundEffect: true,
   soundType: 'censor',
-  volume: 0.75,
+  volume: 0.85,
   voiceAssistant: true,
   voice: 'luciana',
-  ducking: false,
-  ticking: false,
-  vibration: false,
+  ducking: true,
+  ticking: true,
+  vibration: true,
   flashlight: false,
-  screenFlash: false,
+  screenFlash: true,
   rotation: true,
   lightColors: false,
   timeFormat: 'mmss',

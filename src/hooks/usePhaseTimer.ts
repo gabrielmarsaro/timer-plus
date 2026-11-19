@@ -1,11 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { playBeep, unlockAudio } from '../lib/beep'
 import { totalDuration } from '../lib/buildPhases'
 import type { Phase } from '../types'
 
 export type TimerStatus = 'idle' | 'running' | 'paused' | 'finished'
 
-interface UsePhaseTimerOptions {
+export interface PhaseTimerEvents {
+  onStart?: (phase: Phase, next: Phase | null) => void
+  onPhaseChange?: (phase: Phase, next: Phase | null) => void
+  onSecond?: (remaining: number, phase: Phase) => void
+  onComplete?: () => void
+}
+
+interface UsePhaseTimerOptions extends PhaseTimerEvents {
   totalRounds: number
   totalCycles?: number
 }
@@ -28,7 +34,14 @@ interface UsePhaseTimerResult {
 
 export function usePhaseTimer(
   phases: Phase[],
-  { totalRounds, totalCycles = 1 }: UsePhaseTimerOptions,
+  {
+    totalRounds,
+    totalCycles = 1,
+    onStart,
+    onPhaseChange,
+    onSecond,
+    onComplete,
+  }: UsePhaseTimerOptions,
 ): UsePhaseTimerResult {
   const [status, setStatus] = useState<TimerStatus>('idle')
   const [phaseIndex, setPhaseIndex] = useState(0)
@@ -42,12 +55,15 @@ export function usePhaseTimer(
   const lastTickRef = useRef<number | null>(null)
   const rafRef = useRef<number | null>(null)
   const phasesRef = useRef(phases)
+  const lastSecondRef = useRef<number | null>(null)
+  const eventsRef = useRef({ onStart, onPhaseChange, onSecond, onComplete })
 
   statusRef.current = status
   phaseIndexRef.current = phaseIndex
   phaseRemainingRef.current = phaseRemaining
   elapsedRef.current = elapsedInWorkout
   phasesRef.current = phases
+  eventsRef.current = { onStart, onPhaseChange, onSecond, onComplete }
 
   const currentPhase = phases[phaseIndex] ?? null
   const nextPhase = phases[phaseIndex + 1] ?? null
@@ -89,6 +105,7 @@ export function usePhaseTimer(
     setPhaseIndex(0)
     setPhaseRemaining(phases[0]?.duration ?? 0)
     setElapsedInWorkout(0)
+    lastSecondRef.current = null
   }, [phases, stopLoop])
 
   useEffect(() => {
@@ -134,13 +151,20 @@ export function usePhaseTimer(
           setPhaseRemaining(0)
           setElapsedInWorkout(totalDuration(list))
           setStatus('finished')
-          playBeep('done')
+          eventsRef.current.onComplete?.()
           return
         }
 
-        playBeep('phase')
         remaining = list[index].duration - overflow
         setPhaseIndex(index)
+        lastSecondRef.current = null
+        eventsRef.current.onPhaseChange?.(list[index], list[index + 1] ?? null)
+      }
+
+      const whole = Math.ceil(remaining)
+      if (lastSecondRef.current !== whole && list[index]) {
+        lastSecondRef.current = whole
+        eventsRef.current.onSecond?.(remaining, list[index])
       }
 
       setPhaseRemaining(remaining)
@@ -157,13 +181,15 @@ export function usePhaseTimer(
   }, [stopLoop, tick])
 
   const start = useCallback(async () => {
-    void unlockAudio()
     setStatus('running')
     setPhaseIndex(0)
     setPhaseRemaining(phases[0]?.duration ?? 0)
     setElapsedInWorkout(0)
+    lastSecondRef.current = null
     startLoop()
-    playBeep('phase')
+    if (phases[0]) {
+      eventsRef.current.onStart?.(phases[0], phases[1] ?? null)
+    }
   }, [phases, startLoop])
 
   const pause = useCallback(() => {
@@ -172,7 +198,6 @@ export function usePhaseTimer(
   }, [stopLoop])
 
   const resume = useCallback(async () => {
-    void unlockAudio()
     setStatus('running')
     startLoop()
   }, [startLoop])
@@ -185,13 +210,9 @@ export function usePhaseTimer(
 
   useEffect(() => {
     if (status !== 'running') return
-
     const onVisibility = () => {
-      if (document.hidden) {
-        lastTickRef.current = null
-      }
+      if (document.hidden) lastTickRef.current = null
     }
-
     document.addEventListener('visibilitychange', onVisibility)
     return () => document.removeEventListener('visibilitychange', onVisibility)
   }, [status])

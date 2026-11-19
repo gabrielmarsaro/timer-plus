@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
+import { TIME_FORMATS } from '../lib/format'
+import { previewSound, previewVoice } from '../lib/feedback'
 import type { GeneralSettings } from '../types'
 
 interface GeneralSettingsModalProps {
   open: boolean
   settings: GeneralSettings
+  onChange: (settings: GeneralSettings) => void
   onClose: () => void
-  onSave: (settings: GeneralSettings) => void
 }
 
 const SOUND_TYPES: Array<{ id: GeneralSettings['soundType']; label: string }> = [
@@ -22,8 +24,8 @@ const VOICES: Array<{ id: GeneralSettings['voice']; label: string }> = [
 export function GeneralSettingsModal({
   open,
   settings,
+  onChange,
   onClose,
-  onSave,
 }: GeneralSettingsModalProps) {
   const [draft, setDraft] = useState(settings)
 
@@ -33,35 +35,21 @@ export function GeneralSettingsModal({
 
   if (!open) return null
 
+  const update = (patch: Partial<GeneralSettings>) => {
+    const next = { ...draft, ...patch }
+    setDraft(next)
+    onChange(next)
+  }
+
   const toggle = (key: keyof GeneralSettings) => {
-    setDraft((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }))
-  }
-
-  const cycleSoundType = () => {
-    const idx = SOUND_TYPES.findIndex((item) => item.id === draft.soundType)
-    const next = SOUND_TYPES[(idx + 1) % SOUND_TYPES.length]
-    setDraft((prev) => ({ ...prev, soundType: next.id }))
-  }
-
-  const cycleVoice = () => {
-    const idx = VOICES.findIndex((item) => item.id === draft.voice)
-    const next = VOICES[(idx + 1) % VOICES.length]
-    setDraft((prev) => ({ ...prev, voice: next.id }))
-  }
-
-  const finish = () => {
-    onSave(draft)
-    onClose()
+    update({ [key]: !draft[key] } as Partial<GeneralSettings>)
   }
 
   return (
     <div className="native-sheet" role="dialog" aria-modal="true" aria-labelledby="cfg-title">
       <header className="native-sheet-header">
         <h2 id="cfg-title">CONFIGURAÇÕES</h2>
-        <button type="button" className="native-done" onClick={finish}>
+        <button type="button" className="native-done" onClick={onClose}>
           CONCLUÍDO
         </button>
       </header>
@@ -77,7 +65,16 @@ export function GeneralSettingsModal({
           />
         </label>
 
-        <button type="button" className="native-row native-link" onClick={cycleSoundType}>
+        <button
+          type="button"
+          className="native-row native-link"
+          onClick={() => {
+            const idx = SOUND_TYPES.findIndex((item) => item.id === draft.soundType)
+            const next = SOUND_TYPES[(idx + 1) % SOUND_TYPES.length]
+            update({ soundType: next.id })
+            window.setTimeout(() => previewSound(), 40)
+          }}
+        >
           <span>TIPO DE SOM</span>
           <span className="native-value">
             {SOUND_TYPES.find((item) => item.id === draft.soundType)?.label} ›
@@ -94,9 +91,8 @@ export function GeneralSettingsModal({
             max={1}
             step={0.05}
             value={draft.volume}
-            onChange={(event) =>
-              setDraft((prev) => ({ ...prev, volume: Number(event.target.value) }))
-            }
+            onChange={(event) => update({ volume: Number(event.target.value) })}
+            onPointerUp={() => previewSound()}
             aria-label="Volume"
           />
           <span className="volume-icon" aria-hidden>
@@ -110,11 +106,24 @@ export function GeneralSettingsModal({
             type="button"
             className={`toggle${draft.voiceAssistant ? ' is-on' : ''}`}
             aria-pressed={draft.voiceAssistant}
-            onClick={() => toggle('voiceAssistant')}
+            onClick={() => {
+              const enabled = !draft.voiceAssistant
+              update({ voiceAssistant: enabled })
+              if (enabled) window.setTimeout(() => previewVoice(), 80)
+            }}
           />
         </label>
 
-        <button type="button" className="native-row native-link" onClick={cycleVoice}>
+        <button
+          type="button"
+          className="native-row native-link"
+          onClick={() => {
+            const idx = VOICES.findIndex((item) => item.id === draft.voice)
+            const next = VOICES[(idx + 1) % VOICES.length]
+            update({ voice: next.id, voiceAssistant: true })
+            window.setTimeout(() => previewVoice(), 80)
+          }}
+        >
           <span>VOZ</span>
           <span className="native-value">
             {VOICES.find((item) => item.id === draft.voice)?.label} ›
@@ -203,12 +212,22 @@ export function GeneralSettingsModal({
           />
         </label>
 
-        <div className="native-row native-link">
+        <button
+          type="button"
+          className="native-row native-link"
+          onClick={() => {
+            const idx = TIME_FORMATS.findIndex((item) => item.id === draft.timeFormat)
+            const next = TIME_FORMATS[(idx + 1) % TIME_FORMATS.length]
+            update({ timeFormat: next.id })
+          }}
+        >
           <span>FORMATO DE TEMPO</span>
-          <span className="native-value">00:00 ›</span>
-        </div>
+          <span className="native-value">
+            {TIME_FORMATS.find((item) => item.id === draft.timeFormat)?.label} ›
+          </span>
+        </button>
 
-        <p className="native-version">VERSÃO: 1.0.0</p>
+        <p className="native-version">VERSÃO: 1.1.0</p>
       </div>
     </div>
   )
