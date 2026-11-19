@@ -61,15 +61,15 @@ export function WorkoutEditModal({
   useEffect(() => {
     if (!open) return
     setDraft(settings)
-    setActiveKey(fields[0]?.key ?? null)
-  }, [open, settings, fields])
+    setActiveKey(null)
+  }, [open, settings])
 
   if (!open) return null
 
-  const activeField = fields.find((field) => field.key === activeKey) ?? fields[0]
-  const activeValue = Number(
-    (draft as unknown as Record<string, number>)[activeField.key] ?? activeField.min,
-  )
+  const activeField = fields.find((field) => field.key === activeKey) ?? null
+  const activeValue = activeField
+    ? Number((draft as unknown as Record<string, number>)[activeField.key] ?? activeField.min)
+    : 0
 
   const setValue = (key: string, value: number) => {
     setDraft((prev) => ({ ...prev, [key]: value }))
@@ -91,14 +91,13 @@ export function WorkoutEditModal({
 
       <div className="native-sheet-body edit-sheet-body">
         <p className="edit-intro">
-          Escolha um item e <strong>deslize</strong> o seletor, como no iPhone. Depois toque em
-          CONCLUÍDO.
+          Toque em um valor para abrir o seletor no <strong>centro da tela</strong> e deslize.
         </p>
 
         <div className="edit-rows">
           {fields.map((field) => {
             const value = Number((draft as unknown as Record<string, number>)[field.key] ?? 0)
-            const selected = field.key === activeField.key
+            const selected = field.key === activeKey
             return (
               <button
                 key={field.key}
@@ -112,30 +111,55 @@ export function WorkoutEditModal({
             )
           })}
         </div>
-
-        <div className="wheel-panel">
-          <div className="wheel-panel-title">{activeField.label}</div>
-          {activeField.count ? (
-            <CountWheel
-              label={activeField.label}
-              value={activeValue}
-              min={activeField.min}
-              max={activeField.max}
-              step={activeField.step}
-              onChange={(value) => setValue(activeField.key, value)}
-            />
-          ) : (
-            <DurationWheel
-              label={activeField.label}
-              value={activeValue}
-              min={activeField.min}
-              max={activeField.max}
-              step={activeField.step}
-              onChange={(value) => setValue(activeField.key, value)}
-            />
-          )}
-        </div>
       </div>
+
+      {activeField ? (
+        <div
+          className="wheel-overlay"
+          role="presentation"
+          onClick={() => setActiveKey(null)}
+        >
+          <div
+            className="wheel-card"
+            role="dialog"
+            aria-label={`Ajustar ${activeField.label}`}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="wheel-card-header">
+              <span>{activeField.label}</span>
+              <button type="button" className="native-done" onClick={() => setActiveKey(null)}>
+                PRONTO
+              </button>
+            </div>
+
+            <div className="wheel-card-body">
+              {activeField.count ? (
+                <CountWheel
+                  label={activeField.label}
+                  value={activeValue}
+                  min={activeField.min}
+                  max={activeField.max}
+                  step={activeField.step}
+                  onChange={(value) => setValue(activeField.key, value)}
+                />
+              ) : (
+                <DurationWheel
+                  label={activeField.label}
+                  value={activeValue}
+                  min={activeField.min}
+                  max={activeField.max}
+                  step={activeField.step}
+                  onChange={(value) => setValue(activeField.key, value)}
+                />
+              )}
+            </div>
+
+            <div className="wheel-card-value">
+              {formatPreview(activeValue, activeField.count)}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

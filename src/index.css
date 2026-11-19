@@ -874,19 +874,59 @@ button.phase-block:not(:disabled) {
   color: #fff;
 }
 
-.wheel-panel {
-  margin-top: auto;
-  padding: 16px 12px 24px;
-  border-top: 1px solid #222;
-  background: linear-gradient(180deg, #0d0d0d, #000);
+.wheel-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
 }
 
-.wheel-panel-title {
+.wheel-card {
+  width: min(420px, 100%);
+  border-radius: 22px;
+  background: #121212;
+  border: 1px solid #2a2a2a;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  animation: wheel-pop 180ms ease-out;
+}
+
+@keyframes wheel-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.wheel-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 10px;
+  letter-spacing: 0.05em;
+}
+
+.wheel-card-body {
+  padding: 8px 12px 4px;
+}
+
+.wheel-card-value {
   text-align: center;
-  margin-bottom: 10px;
-  color: #9a9a9a;
-  letter-spacing: 0.06em;
-  font-size: 0.85rem;
+  padding: 8px 16px 18px;
+  color: var(--accent);
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
 }
 
 .duration-wheel {
