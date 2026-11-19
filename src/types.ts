@@ -21,6 +21,22 @@ export interface RoundsSettings {
   warning: number
 }
 
+export interface GeneralSettings {
+  soundEffect: boolean
+  soundType: 'censor' | 'beep' | 'bell'
+  volume: number
+  voiceAssistant: boolean
+  voice: 'luciana' | 'sistema'
+  ducking: boolean
+  ticking: boolean
+  vibration: boolean
+  flashlight: boolean
+  screenFlash: boolean
+  rotation: boolean
+  lightColors: boolean
+  timeFormat: 'mmss'
+}
+
 export interface Phase {
   kind: PhaseKind
   label: string
@@ -41,11 +57,27 @@ export const DEFAULT_SETTINGS: TabataSettings = {
 }
 
 export const DEFAULT_ROUNDS_SETTINGS: RoundsSettings = {
-  prepare: 10,
-  round: 180,
+  prepare: 15,
+  round: 109,
   rest: 60,
-  rounds: 12,
+  rounds: 4,
   warning: 10,
+}
+
+export const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
+  soundEffect: true,
+  soundType: 'censor',
+  volume: 0.75,
+  voiceAssistant: true,
+  voice: 'luciana',
+  ducking: false,
+  ticking: false,
+  vibration: false,
+  flashlight: false,
+  screenFlash: false,
+  rotation: true,
+  lightColors: false,
+  timeFormat: 'mmss',
 }
 
 export const PHASE_COLORS: Record<PhaseKind, string> = {

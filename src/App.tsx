@@ -2,16 +2,20 @@ import { Capacitor } from '@capacitor/core'
 import { StatusBar, Style } from '@capacitor/status-bar'
 import { useEffect, useMemo, useState } from 'react'
 import { BottomNav } from './components/BottomNav'
+import { GeneralSettingsModal } from './components/GeneralSettingsModal'
 import { PlaceholderScreen } from './components/PlaceholderScreen'
 import { RoundsScreen } from './components/RoundsScreen'
-import { SettingsModal } from './components/SettingsModal'
 import { TabataScreen } from './components/TabataScreen'
+import { WorkoutEditModal } from './components/WorkoutEditModal'
 import { usePhaseTimer } from './hooks/usePhaseTimer'
 import { useWakeLock } from './hooks/useWakeLock'
+import { setAudioPreferences } from './lib/beep'
 import { buildPhases, buildRoundsPhases } from './lib/buildPhases'
 import {
+  DEFAULT_GENERAL_SETTINGS,
   DEFAULT_ROUNDS_SETTINGS,
   DEFAULT_SETTINGS,
+  type GeneralSettings,
   type RoundsSettings,
   type Tab,
   type TabataSettings,
@@ -19,6 +23,7 @@ import {
 
 const TABATA_KEY = 'timer-plus:tabata-settings'
 const ROUNDS_KEY = 'timer-plus:rounds-settings'
+const GENERAL_KEY = 'timer-plus:general-settings'
 
 function loadJson<T>(key: string, fallback: T): T {
   try {
@@ -38,13 +43,12 @@ export default function App() {
   const [roundsSettings, setRoundsSettings] = useState<RoundsSettings>(() =>
     loadJson(ROUNDS_KEY, DEFAULT_ROUNDS_SETTINGS),
   )
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [settingsFocus, setSettingsFocus] = useState<string | null>(null)
-
-  const openSettings = (focusKey?: string) => {
-    setSettingsFocus(focusKey ?? null)
-    setSettingsOpen(true)
-  }
+  const [generalSettings, setGeneralSettings] = useState<GeneralSettings>(() =>
+    loadJson(GENERAL_KEY, DEFAULT_GENERAL_SETTINGS),
+  )
+  const [generalOpen, setGeneralOpen] = useState(false)
+  const [workoutEditOpen, setWorkoutEditOpen] = useState(false)
+  const [screenFlash, setScreenFlash] = useState(false)
 
   const tabataPhases = useMemo(() => buildPhases(tabataSettings), [tabataSettings])
   const roundsPhases = useMemo(() => buildRoundsPhases(roundsSettings), [roundsSettings])
@@ -73,10 +77,43 @@ export default function App() {
   }, [roundsSettings])
 
   useEffect(() => {
+    localStorage.setItem(GENERAL_KEY, JSON.stringify(generalSettings))
+    setAudioPreferences({
+      soundEffect: generalSettings.soundEffect,
+      volume: generalSettings.volume,
+      vibration: generalSettings.vibration,
+      ticking: generalSettings.ticking,
+    })
+    document.documentElement.dataset.lightColors = generalSettings.lightColors
+      ? 'true'
+      : 'false'
+    document.documentElement.dataset.allowRotation = generalSettings.rotation
+      ? 'true'
+      : 'false'
+  }, [generalSettings])
+
+  useEffect(() => {
     if (!Capacitor.isNativePlatform()) return
     void StatusBar.setStyle({ style: Style.Dark })
     void StatusBar.setBackgroundColor({ color: '#000000' })
   }, [])
+
+  // Screen flash on phase change
+  const phaseKey =
+    tab === 'rounds'
+      ? `${rounds.status}-${rounds.currentPhase?.label}-${Math.ceil(rounds.phaseRemaining)}`
+      : `${tabata.status}-${tabata.currentPhase?.label}-${Math.ceil(tabata.phaseRemaining)}`
+
+  useEffect(() => {
+    if (!generalSettings.screenFlash) return
+    const timer = tab === 'rounds' ? rounds : tabata
+    if (timer.status !== 'running') return
+    if (timer.phaseRemaining > (timer.currentPhase?.duration ?? 0) - 0.25) {
+      setScreenFlash(true)
+      const id = window.setTimeout(() => setScreenFlash(false), 180)
+      return () => window.clearTimeout(id)
+    }
+  }, [phaseKey, generalSettings.screenFlash, rounds, tab, tabata])
 
   const makeToggle =
     (timer: typeof tabata) =>
@@ -93,7 +130,7 @@ export default function App() {
     }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${screenFlash ? ' is-flashing' : ''}`}>
       <main className="app-main">
         {tab === 'tabata' && (
           <TabataScreen
@@ -107,7 +144,8 @@ export default function App() {
             roundsLeft={tabata.roundsLeft}
             cyclesLeft={tabata.cyclesLeft}
             idleWorkDuration={tabataSettings.work}
-            onOpenSettings={openSettings}
+            onOpenGeneralSettings={() => setGeneralOpen(true)}
+            onOpenWorkoutEdit={() => setWorkoutEditOpen(true)}
             onToggle={makeToggle(tabata)}
             onReset={tabata.reset}
           />
@@ -121,12 +159,10 @@ export default function App() {
             phaseRemaining={rounds.phaseRemaining}
             totalRemaining={rounds.totalRemaining}
             roundsLeft={rounds.roundsLeft}
-            currentRoundNumber={rounds.currentRoundNumber}
             idlePrepare={roundsSettings.prepare}
             idleRoundDuration={roundsSettings.round}
-            idleRestDuration={roundsSettings.rest}
-            totalRounds={roundsSettings.rounds}
-            onOpenSettings={openSettings}
+            onOpenGeneralSettings={() => setGeneralOpen(true)}
+            onOpenWorkoutEdit={() => setWorkoutEditOpen(true)}
             onToggle={makeToggle(rounds)}
             onReset={rounds.reset}
           />
@@ -149,25 +185,32 @@ export default function App() {
 
       <BottomNav active={tab} onChange={setTab} />
 
-      <SettingsModal
-        open={settingsOpen}
-        mode={tab === 'rounds' ? 'rounds' : 'tabata'}
-        settings={tab === 'rounds' ? roundsSettings : tabataSettings}
-        focusKey={settingsFocus}
-        onClose={() => {
-          setSettingsOpen(false)
-          setSettingsFocus(null)
-        }}
-        onSave={(next) => {
-          if (tab === 'rounds') {
-            rounds.reset()
-            setRoundsSettings(next as RoundsSettings)
-            return
-          }
-          tabata.reset()
-          setTabataSettings(next as TabataSettings)
-        }}
-      />
+      {generalOpen ? (
+        <GeneralSettingsModal
+          open={generalOpen}
+          settings={generalSettings}
+          onClose={() => setGeneralOpen(false)}
+          onSave={setGeneralSettings}
+        />
+      ) : null}
+
+      {workoutEditOpen ? (
+        <WorkoutEditModal
+          open={workoutEditOpen}
+          mode={tab === 'rounds' ? 'rounds' : 'tabata'}
+          settings={tab === 'rounds' ? roundsSettings : tabataSettings}
+          onClose={() => setWorkoutEditOpen(false)}
+          onSave={(next) => {
+            if (tab === 'rounds') {
+              rounds.reset()
+              setRoundsSettings(next as RoundsSettings)
+              return
+            }
+            tabata.reset()
+            setTabataSettings(next as TabataSettings)
+          }}
+        />
+      ) : null}
     </div>
   )
 }

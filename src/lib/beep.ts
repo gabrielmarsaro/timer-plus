@@ -1,7 +1,23 @@
 import { Capacitor } from '@capacitor/core'
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics'
+import type { GeneralSettings } from '../types'
 
 let audioCtx: AudioContext | null = null
+let currentSettings: Pick<
+  GeneralSettings,
+  'soundEffect' | 'volume' | 'vibration' | 'ticking'
+> = {
+  soundEffect: true,
+  volume: 0.75,
+  vibration: false,
+  ticking: false,
+}
+
+export function setAudioPreferences(
+  settings: Pick<GeneralSettings, 'soundEffect' | 'volume' | 'vibration' | 'ticking'>,
+): void {
+  currentSettings = settings
+}
 
 function getCtx(): AudioContext {
   if (!audioCtx) {
@@ -25,6 +41,7 @@ export async function unlockAudio(): Promise<void> {
 }
 
 async function vibrate(kind: 'tick' | 'phase' | 'done'): Promise<void> {
+  if (!currentSettings.vibration) return
   if (!Capacitor.isNativePlatform()) return
   try {
     if (kind === 'done') {
@@ -41,16 +58,21 @@ async function vibrate(kind: 'tick' | 'phase' | 'done'): Promise<void> {
 
 export function playBeep(kind: 'tick' | 'phase' | 'done' = 'phase'): void {
   void vibrate(kind)
+
+  if (kind === 'tick' && !currentSettings.ticking) return
+  if (kind !== 'tick' && !currentSettings.soundEffect) return
+
   try {
     const ctx = getCtx()
     const now = ctx.currentTime
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
+    const vol = Math.max(0.02, currentSettings.volume * 0.28)
 
     const config = {
-      tick: { freq: 880, duration: 0.08, gain: 0.08 },
-      phase: { freq: 660, duration: 0.22, gain: 0.18 },
-      done: { freq: 523.25, duration: 0.45, gain: 0.22 },
+      tick: { freq: 880, duration: 0.06, gain: vol * 0.35 },
+      phase: { freq: 660, duration: 0.22, gain: vol },
+      done: { freq: 523.25, duration: 0.45, gain: vol },
     }[kind]
 
     osc.type = 'sine'
@@ -70,7 +92,7 @@ export function playBeep(kind: 'tick' | 'phase' | 'done' = 'phase'): void {
       osc2.type = 'sine'
       osc2.frequency.setValueAtTime(784, now + 0.18)
       gain2.gain.setValueAtTime(0.0001, now + 0.18)
-      gain2.gain.exponentialRampToValueAtTime(0.18, now + 0.2)
+      gain2.gain.exponentialRampToValueAtTime(vol, now + 0.2)
       gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.5)
       osc2.connect(gain2)
       gain2.connect(ctx.destination)

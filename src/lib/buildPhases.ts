@@ -84,7 +84,7 @@ export function buildRoundsPhases(settings: RoundsSettings): Phase[] {
   for (let round = 1; round <= settings.rounds; round += 1) {
     phases.push({
       kind: 'work',
-      label: `RONDA ${round}`,
+      label: PHASE_LABELS.work,
       duration: settings.round,
       color: PHASE_COLORS.work,
       round,

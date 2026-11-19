@@ -2,7 +2,8 @@
   color-scheme: dark;
   --bg: #000000;
   --yellow: #f5e600;
-  --green: #9dff4a;
+  --green: #b6ff3c;
+  --accent: #b6ff3c;
   --blue: #5eb8ff;
   --text: #ffffff;
   --muted: #9a9a9a;
@@ -118,13 +119,20 @@ button {
   flex-direction: column;
   align-items: flex-end;
   gap: 10px;
-  padding-top: 4px;
+  padding-top: 2px;
 }
 
-.header-mini-icon {
-  width: 22px;
-  height: 22px;
-  color: var(--muted);
+.timer-edit-btn {
+  color: var(--yellow) !important;
+}
+
+.timer-edit-btn svg {
+  width: 26px;
+  height: 26px;
+}
+
+.app-shell.is-flashing {
+  filter: brightness(1.55);
 }
 
 .reset-btn {
@@ -686,5 +694,171 @@ button.phase-block:not(:disabled) {
     margin-block: 18px;
     height: calc(100% - 36px);
     overflow: hidden;
+  }
+}
+
+/* Folhas nativas estilo Timer Plus */
+.native-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.native-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 16px 12px;
+  border-bottom: 1px solid #1c1c1c;
+}
+
+.native-sheet-header h2 {
+  font-size: 1.15rem;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+}
+
+.native-done {
+  color: var(--accent);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.native-sheet-body {
+  flex: 1;
+  overflow: auto;
+  padding: 0 0 calc(24px + var(--safe-bottom));
+}
+
+.native-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 54px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #1a1a1a;
+  font-size: 0.92rem;
+  letter-spacing: 0.04em;
+  width: 100%;
+  text-align: left;
+  color: #fff;
+}
+
+.native-row-stack {
+  align-items: flex-start;
+}
+
+.native-row-stack > div {
+  display: grid;
+  gap: 4px;
+}
+
+.native-row small {
+  display: block;
+  color: #8a8a8a;
+  font-family: system-ui, sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+  max-width: 42ch;
+}
+
+.native-link .native-value {
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.native-volume {
+  gap: 10px;
+}
+
+.native-volume input[type='range'] {
+  flex: 1;
+  accent-color: var(--accent);
+}
+
+.volume-icon {
+  color: var(--accent);
+  font-size: 0.85rem;
+  min-width: 1.4rem;
+}
+
+.toggle {
+  width: 52px;
+  height: 32px;
+  border-radius: 999px;
+  background: #3a3a3a;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 160ms ease;
+}
+
+.toggle.is-on {
+  background: var(--accent);
+}
+
+.toggle.is-on::after {
+  transform: translateX(20px);
+}
+
+.native-version {
+  margin: 28px 16px 8px;
+  color: #c8c45a;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+}
+
+.edit-intro {
+  margin: 14px 16px 8px;
+  color: #9a9a9a;
+  font-family: system-ui, sans-serif;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.edit-intro strong {
+  color: var(--accent);
+}
+
+.edit-field {
+  padding: 14px 16px 18px;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.edit-field-label {
+  margin-bottom: 12px;
+  letter-spacing: 0.05em;
+}
+
+.stat-spacer {
+  visibility: hidden;
+}
+
+html[data-allow-rotation='false'] body {
+  /* Prefer portrait when rotation is disabled */
+}
+
+@media (min-width: 768px) {
+  .native-sheet {
+    max-width: 560px;
+    border-inline: 1px solid #1a1a1a;
   }
 }

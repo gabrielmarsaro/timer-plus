@@ -16,12 +16,10 @@ interface RoundsScreenProps {
   phaseRemaining: number
   totalRemaining: number
   roundsLeft: number
-  currentRoundNumber: number
   idlePrepare: number
   idleRoundDuration: number
-  idleRestDuration: number
-  totalRounds: number
-  onOpenSettings: (focusKey?: string) => void
+  onOpenGeneralSettings: () => void
+  onOpenWorkoutEdit: () => void
   onToggle: () => void
   onReset: () => void
 }
@@ -33,62 +31,43 @@ export function RoundsScreen({
   phaseRemaining,
   totalRemaining,
   roundsLeft,
-  currentRoundNumber,
   idlePrepare,
   idleRoundDuration,
-  idleRestDuration,
-  totalRounds,
-  onOpenSettings,
+  onOpenGeneralSettings,
+  onOpenWorkoutEdit,
   onToggle,
   onReset,
 }: RoundsScreenProps) {
-  const canConfigure = status === 'idle' || status === 'finished'
-
   const primary =
     status === 'idle'
       ? {
           label: 'PREPARAR',
           time: formatTime(idlePrepare),
           color: '#f5e600',
-          focusKey: 'prepare',
         }
       : {
-          label: currentPhase?.label ?? 'RONDA',
+          label: currentPhase?.label ?? 'PREPARAR',
           time: formatTime(phaseRemaining),
           color: currentPhase?.color ?? '#f5e600',
-          focusKey:
-            currentPhase?.kind === 'prepare'
-              ? 'prepare'
-              : currentPhase?.kind === 'rest'
-                ? 'rest'
-                : 'round',
         }
 
   const secondary =
     status === 'idle'
       ? {
-          label: 'RONDA 1',
+          label: 'EXERCÍCIO',
           time: formatTime(idleRoundDuration),
           color: '#9dff4a',
-          focusKey: 'round',
         }
       : nextPhase
         ? {
             label: nextPhase.label,
             time: formatTime(nextPhase.duration),
             color: nextPhase.color,
-            focusKey:
-              nextPhase.kind === 'prepare'
-                ? 'prepare'
-                : nextPhase.kind === 'rest'
-                  ? 'rest'
-                  : 'round',
           }
         : {
             label: 'FIM',
             time: '00:00',
             color: '#333333',
-            focusKey: 'round',
           }
 
   const isRunning = status === 'running'
@@ -101,7 +80,7 @@ export function RoundsScreen({
         <button
           type="button"
           className="icon-btn"
-          onClick={() => onOpenSettings()}
+          onClick={onOpenGeneralSettings}
           aria-label="Configurações"
         >
           <GearIcon />
@@ -113,7 +92,15 @@ export function RoundsScreen({
         </div>
 
         <div className="header-right">
-          <TimerMiniIcon className="header-mini-icon" />
+          <button
+            type="button"
+            className="icon-btn timer-edit-btn"
+            onClick={onOpenWorkoutEdit}
+            aria-label="Editar rondas"
+            title="Editar tempos e rondas"
+          >
+            <TimerMiniIcon />
+          </button>
           <button
             type="button"
             className="reset-btn"
@@ -125,56 +112,23 @@ export function RoundsScreen({
         </div>
       </header>
 
-      {canConfigure ? (
-        <button
-          type="button"
-          className="configure-banner"
-          onClick={() => onOpenSettings()}
-        >
-          CONFIGURAR RONDAS · {totalRounds}× {formatTime(idleRoundDuration)} · descanso{' '}
-          {formatTime(idleRestDuration)}
-        </button>
-      ) : null}
-
       <div className="phase-stack">
-        <button
-          type="button"
-          className="phase-block phase-primary"
-          style={{ background: primary.color }}
-          disabled={!canConfigure}
-          onClick={() => onOpenSettings(primary.focusKey)}
-        >
+        <div className="phase-block phase-primary" style={{ background: primary.color }}>
           <p className="phase-label">{primary.label}</p>
           <p className="phase-time phase-time-lg">{primary.time}</p>
-          {canConfigure ? <span className="phase-edit-hint">TOQUE PARA EDITAR</span> : null}
-        </button>
+        </div>
 
-        <button
-          type="button"
-          className="phase-block phase-secondary"
-          style={{ background: secondary.color }}
-          disabled={!canConfigure}
-          onClick={() => onOpenSettings(secondary.focusKey)}
-        >
+        <div className="phase-block phase-secondary" style={{ background: secondary.color }}>
           <p className="phase-label">{secondary.label}</p>
           <p className="phase-time phase-time-md">{secondary.time}</p>
-          {canConfigure ? <span className="phase-edit-hint">TOQUE PARA EDITAR</span> : null}
-        </button>
+        </div>
       </div>
 
-      <div className="controls-row">
-        <button
-          type="button"
-          className="stat-block stat-btn"
-          disabled={!canConfigure}
-          onClick={() => onOpenSettings('rounds')}
-          aria-label="Configurar número de rondas"
-        >
-          <p className="stat-value stat-blue">{canConfigure ? totalRounds : roundsLeft}</p>
-          <p className="stat-label">
-            {canConfigure ? 'RONDAS (TOQUE)' : 'RONDAS PARA TERMINAR'}
-          </p>
-        </button>
+      <div className="controls-row controls-row-rounds">
+        <div className="stat-block">
+          <p className="stat-value stat-blue">{roundsLeft}</p>
+          <p className="stat-label">RONDAS PARA TERMINAR</p>
+        </div>
 
         <div className="play-block">
           <button
@@ -188,10 +142,7 @@ export function RoundsScreen({
           <p className="play-label">{actionLabel}</p>
         </div>
 
-        <div className="stat-block">
-          <p className="stat-value stat-yellow">{currentRoundNumber}</p>
-          <p className="stat-label">RONDA ATUAL</p>
-        </div>
+        <div className="stat-block stat-spacer" aria-hidden />
       </div>
     </section>
   )
