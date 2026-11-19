@@ -12,6 +12,15 @@ export interface TabataSettings {
   cooldown: number
 }
 
+/** Timer de rondas estilo boxe/MMA */
+export interface RoundsSettings {
+  prepare: number
+  round: number
+  rest: number
+  rounds: number
+  warning: number
+}
+
 export interface Phase {
   kind: PhaseKind
   label: string
@@ -29,6 +38,14 @@ export const DEFAULT_SETTINGS: TabataSettings = {
   cycles: 1,
   cycleRest: 0,
   cooldown: 0,
+}
+
+export const DEFAULT_ROUNDS_SETTINGS: RoundsSettings = {
+  prepare: 10,
+  round: 180,
+  rest: 60,
+  rounds: 12,
+  warning: 10,
 }
 
 export const PHASE_COLORS: Record<PhaseKind, string> = {

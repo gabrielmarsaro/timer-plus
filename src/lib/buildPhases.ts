@@ -2,6 +2,7 @@ import {
   PHASE_COLORS,
   PHASE_LABELS,
   type Phase,
+  type RoundsSettings,
   type TabataSettings,
 } from '../types'
 
@@ -62,6 +63,44 @@ export function buildPhases(settings: TabataSettings): Phase[] {
       duration: settings.cooldown,
       color: PHASE_COLORS.cooldown,
     })
+  }
+
+  return phases
+}
+
+/** Rondas estilo boxe: preparar → [ronda → descanso] × N */
+export function buildRoundsPhases(settings: RoundsSettings): Phase[] {
+  const phases: Phase[] = []
+
+  if (settings.prepare > 0) {
+    phases.push({
+      kind: 'prepare',
+      label: PHASE_LABELS.prepare,
+      duration: settings.prepare,
+      color: PHASE_COLORS.prepare,
+    })
+  }
+
+  for (let round = 1; round <= settings.rounds; round += 1) {
+    phases.push({
+      kind: 'work',
+      label: `RONDA ${round}`,
+      duration: settings.round,
+      color: PHASE_COLORS.work,
+      round,
+      cycle: 1,
+    })
+
+    if (round < settings.rounds && settings.rest > 0) {
+      phases.push({
+        kind: 'rest',
+        label: PHASE_LABELS.rest,
+        duration: settings.rest,
+        color: PHASE_COLORS.rest,
+        round,
+        cycle: 1,
+      })
+    }
   }
 
   return phases

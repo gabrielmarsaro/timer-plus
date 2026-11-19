@@ -8,12 +8,22 @@ Timer de treino HIIT/Tabata para **celular, tablet e Android** (instalação por
 
 Ou no GitHub: abra a pasta [`releases/`](https://github.com/gabrielmarsaro/timer-plus/tree/main/releases) e clique no arquivo `timer-plus-debug.apk` → **Download**.
 
-### Instalar no tablet
+### Modos
+
+| Aba | Status |
+|-----|--------|
+| **Tabata** | Pronto |
+| **Rondas** | Pronto (boxe/MMA: preparar → ronda → descanso) |
+| Cronómetro | Em breve |
+| Mais | Em breve |
+
+### Instalar / atualizar no tablet
 
 1. No tablet, abra o link acima (Chrome) e baixe o APK.
 2. Abra o arquivo baixado.
 3. Se bloquear, ative **Instalar apps desconhecidos** para o Chrome/Arquivos.
-4. Toque em **Instalar** → **Abrir**.
+4. Toque em **Instalar** / **Atualizar** → **Abrir**.
+5. Abra a aba **RONDAS** na barra inferior.
 
 ## Rodar no navegador
 

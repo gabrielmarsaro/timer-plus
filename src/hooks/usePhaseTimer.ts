@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { playBeep, unlockAudio } from '../lib/beep'
-import { buildPhases, totalDuration } from '../lib/buildPhases'
-import type { Phase, TabataSettings } from '../types'
+import { totalDuration } from '../lib/buildPhases'
+import type { Phase } from '../types'
 
 export type TimerStatus = 'idle' | 'running' | 'paused' | 'finished'
 
-interface UseTabataTimerResult {
+interface UsePhaseTimerOptions {
+  totalRounds: number
+  totalCycles?: number
+}
+
+interface UsePhaseTimerResult {
   status: TimerStatus
   phases: Phase[]
   currentPhase: Phase | null
@@ -14,14 +19,17 @@ interface UseTabataTimerResult {
   totalRemaining: number
   roundsLeft: number
   cyclesLeft: number
+  currentRoundNumber: number
   start: () => Promise<void>
   pause: () => void
   resume: () => Promise<void>
   reset: () => void
 }
 
-export function useTabataTimer(settings: TabataSettings): UseTabataTimerResult {
-  const phases = useMemo(() => buildPhases(settings), [settings])
+export function usePhaseTimer(
+  phases: Phase[],
+  { totalRounds, totalCycles = 1 }: UsePhaseTimerOptions,
+): UsePhaseTimerResult {
   const [status, setStatus] = useState<TimerStatus>('idle')
   const [phaseIndex, setPhaseIndex] = useState(0)
   const [phaseRemaining, setPhaseRemaining] = useState(phases[0]?.duration ?? 0)
@@ -33,11 +41,13 @@ export function useTabataTimer(settings: TabataSettings): UseTabataTimerResult {
   const elapsedRef = useRef(elapsedInWorkout)
   const lastTickRef = useRef<number | null>(null)
   const rafRef = useRef<number | null>(null)
+  const phasesRef = useRef(phases)
 
   statusRef.current = status
   phaseIndexRef.current = phaseIndex
   phaseRemainingRef.current = phaseRemaining
   elapsedRef.current = elapsedInWorkout
+  phasesRef.current = phases
 
   const currentPhase = phases[phaseIndex] ?? null
   const nextPhase = phases[phaseIndex + 1] ?? null
@@ -45,18 +55,25 @@ export function useTabataTimer(settings: TabataSettings): UseTabataTimerResult {
   const totalRemaining = Math.max(0, workoutTotal - elapsedInWorkout)
 
   const roundsLeft = useMemo(() => {
-    if (!currentPhase || status === 'finished') return 0
-    const cycle = currentPhase.cycle ?? settings.cycles
-    const round = currentPhase.round ?? settings.rounds
-    const remainingInCycle = settings.rounds - round + 1
-    const futureCycles = Math.max(0, settings.cycles - cycle)
-    return remainingInCycle + futureCycles * settings.rounds
-  }, [currentPhase, settings.cycles, settings.rounds, status])
+    if (status === 'finished') return 0
+    if (status === 'idle') return totalRounds
+    if (!currentPhase) return 0
+    const round = currentPhase.round ?? totalRounds
+    return Math.max(0, totalRounds - round + (currentPhase.kind === 'work' ? 1 : 0))
+  }, [currentPhase, status, totalRounds])
 
   const cyclesLeft = useMemo(() => {
-    if (!currentPhase || status === 'finished') return 0
-    return settings.cycles - (currentPhase.cycle ?? 1) + 1
-  }, [currentPhase, settings.cycles, status])
+    if (status === 'finished') return 0
+    if (status === 'idle') return totalCycles
+    if (!currentPhase) return 0
+    return totalCycles - (currentPhase.cycle ?? 1) + 1
+  }, [currentPhase, status, totalCycles])
+
+  const currentRoundNumber = useMemo(() => {
+    if (status === 'idle') return 1
+    if (status === 'finished') return totalRounds
+    return currentPhase?.round ?? 1
+  }, [currentPhase, status, totalRounds])
 
   const stopLoop = useCallback(() => {
     if (rafRef.current !== null) {
@@ -85,6 +102,7 @@ export function useTabataTimer(settings: TabataSettings): UseTabataTimerResult {
   const tick = useCallback(
     (now: number) => {
       if (statusRef.current !== 'running') return
+      const list = phasesRef.current
 
       if (lastTickRef.current === null) {
         lastTickRef.current = now
@@ -101,35 +119,35 @@ export function useTabataTimer(settings: TabataSettings): UseTabataTimerResult {
 
       while (remaining <= 0) {
         const overflow = -remaining
-        const finishedPhase = phases[index]
+        const finishedPhase = list[index]
         if (!finishedPhase) break
 
         elapsed = Math.min(
-          totalDuration(phases),
+          totalDuration(list),
           elapsedRef.current + finishedPhase.duration - phaseRemainingRef.current + overflow,
         )
 
         index += 1
-        if (index >= phases.length) {
+        if (index >= list.length) {
           stopLoop()
-          setPhaseIndex(phases.length - 1)
+          setPhaseIndex(Math.max(0, list.length - 1))
           setPhaseRemaining(0)
-          setElapsedInWorkout(totalDuration(phases))
+          setElapsedInWorkout(totalDuration(list))
           setStatus('finished')
           playBeep('done')
           return
         }
 
         playBeep('phase')
-        remaining = phases[index].duration - overflow
+        remaining = list[index].duration - overflow
         setPhaseIndex(index)
       }
 
       setPhaseRemaining(remaining)
-      setElapsedInWorkout(Math.min(totalDuration(phases), elapsed))
+      setElapsedInWorkout(Math.min(totalDuration(list), elapsed))
       rafRef.current = requestAnimationFrame(tick)
     },
-    [phases, stopLoop],
+    [stopLoop],
   )
 
   const startLoop = useCallback(() => {
@@ -185,8 +203,9 @@ export function useTabataTimer(settings: TabataSettings): UseTabataTimerResult {
     nextPhase,
     phaseRemaining,
     totalRemaining,
-    roundsLeft: status === 'idle' ? settings.rounds * settings.cycles : roundsLeft,
-    cyclesLeft: status === 'idle' ? settings.cycles : cyclesLeft,
+    roundsLeft,
+    cyclesLeft,
+    currentRoundNumber,
     start,
     pause,
     resume,

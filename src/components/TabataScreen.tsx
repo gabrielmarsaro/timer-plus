@@ -1,6 +1,6 @@
 import { formatTime } from '../lib/format'
 import type { Phase } from '../types'
-import type { TimerStatus } from '../hooks/useTabataTimer'
+import type { TimerStatus } from '../hooks/usePhaseTimer'
 import {
   GearIcon,
   PauseIcon,
