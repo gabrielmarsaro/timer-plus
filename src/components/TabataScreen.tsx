@@ -18,7 +18,7 @@ interface TabataScreenProps {
   roundsLeft: number
   cyclesLeft: number
   idleWorkDuration: number
-  onOpenSettings: () => void
+  onOpenSettings: (focusKey?: string) => void
   onToggle: () => void
   onReset: () => void
 }
@@ -69,6 +69,7 @@ export function TabataScreen({
           }
 
   const isRunning = status === 'running'
+  const canConfigure = status === 'idle' || status === 'finished'
   const actionLabel =
     status === 'running' ? 'PAUSAR' : status === 'paused' ? 'CONTINUAR' : 'INICIAR'
 
@@ -78,7 +79,7 @@ export function TabataScreen({
         <button
           type="button"
           className="icon-btn"
-          onClick={onOpenSettings}
+          onClick={() => onOpenSettings()}
           aria-label="Configurações"
         >
           <GearIcon />
@@ -102,23 +103,54 @@ export function TabataScreen({
         </div>
       </header>
 
+      {canConfigure ? (
+        <button
+          type="button"
+          className="configure-banner"
+          onClick={() => onOpenSettings()}
+        >
+          CONFIGURAR TABATA · toque aqui ou na engrenagem
+        </button>
+      ) : null}
+
       <div className="phase-stack">
-        <div className="phase-block phase-primary" style={{ background: primary.color }}>
+        <button
+          type="button"
+          className="phase-block phase-primary"
+          style={{ background: primary.color }}
+          disabled={!canConfigure}
+          onClick={() => onOpenSettings('prepare')}
+        >
           <p className="phase-label">{primary.label}</p>
           <p className="phase-time phase-time-lg">{primary.time}</p>
-        </div>
+          {canConfigure ? <span className="phase-edit-hint">TOQUE PARA EDITAR</span> : null}
+        </button>
 
-        <div className="phase-block phase-secondary" style={{ background: secondary.color }}>
+        <button
+          type="button"
+          className="phase-block phase-secondary"
+          style={{ background: secondary.color }}
+          disabled={!canConfigure}
+          onClick={() => onOpenSettings('work')}
+        >
           <p className="phase-label">{secondary.label}</p>
           <p className="phase-time phase-time-md">{secondary.time}</p>
-        </div>
+          {canConfigure ? <span className="phase-edit-hint">TOQUE PARA EDITAR</span> : null}
+        </button>
       </div>
 
       <div className="controls-row">
-        <div className="stat-block">
+        <button
+          type="button"
+          className="stat-block stat-btn"
+          disabled={!canConfigure}
+          onClick={() => onOpenSettings('rounds')}
+        >
           <p className="stat-value stat-blue">{roundsLeft}</p>
-          <p className="stat-label">RONDAS PARA TERMINAR</p>
-        </div>
+          <p className="stat-label">
+            {canConfigure ? 'RONDAS (TOQUE)' : 'RONDAS PARA TERMINAR'}
+          </p>
+        </button>
 
         <div className="play-block">
           <button
@@ -132,10 +164,17 @@ export function TabataScreen({
           <p className="play-label">{actionLabel}</p>
         </div>
 
-        <div className="stat-block">
+        <button
+          type="button"
+          className="stat-block stat-btn"
+          disabled={!canConfigure}
+          onClick={() => onOpenSettings('cycles')}
+        >
           <p className="stat-value stat-yellow">{cyclesLeft}</p>
-          <p className="stat-label">CICLOS PARA TERMINAR</p>
-        </div>
+          <p className="stat-label">
+            {canConfigure ? 'CICLOS (TOQUE)' : 'CICLOS PARA TERMINAR'}
+          </p>
+        </button>
       </div>
     </section>
   )

@@ -39,6 +39,12 @@ export default function App() {
     loadJson(ROUNDS_KEY, DEFAULT_ROUNDS_SETTINGS),
   )
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsFocus, setSettingsFocus] = useState<string | null>(null)
+
+  const openSettings = (focusKey?: string) => {
+    setSettingsFocus(focusKey ?? null)
+    setSettingsOpen(true)
+  }
 
   const tabataPhases = useMemo(() => buildPhases(tabataSettings), [tabataSettings])
   const roundsPhases = useMemo(() => buildRoundsPhases(roundsSettings), [roundsSettings])
@@ -101,7 +107,7 @@ export default function App() {
             roundsLeft={tabata.roundsLeft}
             cyclesLeft={tabata.cyclesLeft}
             idleWorkDuration={tabataSettings.work}
-            onOpenSettings={() => setSettingsOpen(true)}
+            onOpenSettings={openSettings}
             onToggle={makeToggle(tabata)}
             onReset={tabata.reset}
           />
@@ -118,7 +124,9 @@ export default function App() {
             currentRoundNumber={rounds.currentRoundNumber}
             idlePrepare={roundsSettings.prepare}
             idleRoundDuration={roundsSettings.round}
-            onOpenSettings={() => setSettingsOpen(true)}
+            idleRestDuration={roundsSettings.rest}
+            totalRounds={roundsSettings.rounds}
+            onOpenSettings={openSettings}
             onToggle={makeToggle(rounds)}
             onReset={rounds.reset}
           />
@@ -145,7 +153,11 @@ export default function App() {
         open={settingsOpen}
         mode={tab === 'rounds' ? 'rounds' : 'tabata'}
         settings={tab === 'rounds' ? roundsSettings : tabataSettings}
-        onClose={() => setSettingsOpen(false)}
+        focusKey={settingsFocus}
+        onClose={() => {
+          setSettingsOpen(false)
+          setSettingsFocus(null)
+        }}
         onSave={(next) => {
           if (tab === 'rounds') {
             rounds.reset()

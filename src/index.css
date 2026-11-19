@@ -149,6 +149,19 @@ button {
   grid-template-rows: 1.35fr 0.9fr;
 }
 
+.configure-banner {
+  margin: 0 14px 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #1a1a1a;
+  color: var(--yellow);
+  border: 1px solid #333;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
 .phase-block {
   display: flex;
   flex-direction: column;
@@ -158,6 +171,33 @@ button {
   color: #111;
   padding: 8px 12px;
   transition: background 180ms ease;
+  width: 100%;
+  border: 0;
+}
+
+button.phase-block:disabled {
+  opacity: 1;
+}
+
+button.phase-block:not(:disabled) {
+  cursor: pointer;
+}
+
+.phase-edit-hint {
+  margin-top: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  opacity: 0.7;
+}
+
+.stat-btn {
+  background: transparent;
+  width: 100%;
+}
+
+.stat-btn:disabled {
+  opacity: 1;
 }
 
 .phase-label {
@@ -369,31 +409,83 @@ button {
   line-height: 1;
 }
 
+.settings-intro {
+  margin: 0 0 14px;
+  color: #bdbdbd;
+  font-family: system-ui, sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.settings-intro strong {
+  color: var(--yellow);
+  font-family: inherit;
+}
+
 .settings-list {
   display: grid;
-  gap: 14px;
-}
-
-.settings-row {
-  display: grid;
-  gap: 8px;
-}
-
-.settings-row-top {
-  display: flex;
-  justify-content: space-between;
   gap: 12px;
-  font-size: 0.95rem;
-  letter-spacing: 0.03em;
 }
 
-.settings-row-top strong {
+.settings-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+}
+
+.settings-card.is-focused {
+  border-color: var(--yellow);
+  box-shadow: 0 0 0 1px var(--yellow);
+}
+
+.settings-card-text {
+  display: grid;
+  gap: 4px;
+}
+
+.settings-card-label {
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+}
+
+.settings-card-hint {
+  color: #8f8f8f;
+  font-family: system-ui, sans-serif;
+  font-size: 0.8rem;
+}
+
+.stepper {
+  display: grid;
+  grid-template-columns: 64px 1fr 64px;
+  gap: 10px;
+  align-items: center;
+}
+
+.stepper-btn {
+  height: 56px;
+  border-radius: 14px;
+  background: #2a2a2a;
   color: var(--yellow);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
-.settings-row input[type='range'] {
-  width: 100%;
-  accent-color: var(--yellow);
+.stepper-btn:active {
+  transform: scale(0.96);
+  background: #333;
+}
+
+.stepper-value {
+  text-align: center;
+  color: var(--yellow);
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
 }
 
 .modal-actions {

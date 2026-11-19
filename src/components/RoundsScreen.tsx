@@ -19,7 +19,9 @@ interface RoundsScreenProps {
   currentRoundNumber: number
   idlePrepare: number
   idleRoundDuration: number
-  onOpenSettings: () => void
+  idleRestDuration: number
+  totalRounds: number
+  onOpenSettings: (focusKey?: string) => void
   onToggle: () => void
   onReset: () => void
 }
@@ -34,21 +36,32 @@ export function RoundsScreen({
   currentRoundNumber,
   idlePrepare,
   idleRoundDuration,
+  idleRestDuration,
+  totalRounds,
   onOpenSettings,
   onToggle,
   onReset,
 }: RoundsScreenProps) {
+  const canConfigure = status === 'idle' || status === 'finished'
+
   const primary =
     status === 'idle'
       ? {
           label: 'PREPARAR',
           time: formatTime(idlePrepare),
           color: '#f5e600',
+          focusKey: 'prepare',
         }
       : {
           label: currentPhase?.label ?? 'RONDA',
           time: formatTime(phaseRemaining),
           color: currentPhase?.color ?? '#f5e600',
+          focusKey:
+            currentPhase?.kind === 'prepare'
+              ? 'prepare'
+              : currentPhase?.kind === 'rest'
+                ? 'rest'
+                : 'round',
         }
 
   const secondary =
@@ -57,17 +70,25 @@ export function RoundsScreen({
           label: 'RONDA 1',
           time: formatTime(idleRoundDuration),
           color: '#9dff4a',
+          focusKey: 'round',
         }
       : nextPhase
         ? {
             label: nextPhase.label,
             time: formatTime(nextPhase.duration),
             color: nextPhase.color,
+            focusKey:
+              nextPhase.kind === 'prepare'
+                ? 'prepare'
+                : nextPhase.kind === 'rest'
+                  ? 'rest'
+                  : 'round',
           }
         : {
             label: 'FIM',
             time: '00:00',
             color: '#333333',
+            focusKey: 'round',
           }
 
   const isRunning = status === 'running'
@@ -80,7 +101,7 @@ export function RoundsScreen({
         <button
           type="button"
           className="icon-btn"
-          onClick={onOpenSettings}
+          onClick={() => onOpenSettings()}
           aria-label="Configurações"
         >
           <GearIcon />
@@ -104,23 +125,56 @@ export function RoundsScreen({
         </div>
       </header>
 
+      {canConfigure ? (
+        <button
+          type="button"
+          className="configure-banner"
+          onClick={() => onOpenSettings()}
+        >
+          CONFIGURAR RONDAS · {totalRounds}× {formatTime(idleRoundDuration)} · descanso{' '}
+          {formatTime(idleRestDuration)}
+        </button>
+      ) : null}
+
       <div className="phase-stack">
-        <div className="phase-block phase-primary" style={{ background: primary.color }}>
+        <button
+          type="button"
+          className="phase-block phase-primary"
+          style={{ background: primary.color }}
+          disabled={!canConfigure}
+          onClick={() => onOpenSettings(primary.focusKey)}
+        >
           <p className="phase-label">{primary.label}</p>
           <p className="phase-time phase-time-lg">{primary.time}</p>
-        </div>
+          {canConfigure ? <span className="phase-edit-hint">TOQUE PARA EDITAR</span> : null}
+        </button>
 
-        <div className="phase-block phase-secondary" style={{ background: secondary.color }}>
+        <button
+          type="button"
+          className="phase-block phase-secondary"
+          style={{ background: secondary.color }}
+          disabled={!canConfigure}
+          onClick={() => onOpenSettings(secondary.focusKey)}
+        >
           <p className="phase-label">{secondary.label}</p>
           <p className="phase-time phase-time-md">{secondary.time}</p>
-        </div>
+          {canConfigure ? <span className="phase-edit-hint">TOQUE PARA EDITAR</span> : null}
+        </button>
       </div>
 
       <div className="controls-row">
-        <div className="stat-block">
-          <p className="stat-value stat-blue">{roundsLeft}</p>
-          <p className="stat-label">RONDAS PARA TERMINAR</p>
-        </div>
+        <button
+          type="button"
+          className="stat-block stat-btn"
+          disabled={!canConfigure}
+          onClick={() => onOpenSettings('rounds')}
+          aria-label="Configurar número de rondas"
+        >
+          <p className="stat-value stat-blue">{canConfigure ? totalRounds : roundsLeft}</p>
+          <p className="stat-label">
+            {canConfigure ? 'RONDAS (TOQUE)' : 'RONDAS PARA TERMINAR'}
+          </p>
+        </button>
 
         <div className="play-block">
           <button
