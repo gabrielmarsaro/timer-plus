@@ -2,29 +2,18 @@
 
 Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
-## iPhone (funciona agora)
+## iPhone (Safari) — use este link
 
-Abra no **Safari** (não no Chrome):
+Abra **no Safari** (não no Instagram/WhatsApp in-app browser):
 
-**https://cdn.jsdelivr.net/gh/gabrielmarsaro/timer-plus@main/docs/index.html**
+### https://endless-grid-au2pb8m.shipstatic.com/
 
-1. Toque em **Compartilhar** (quadrado com seta para cima).  
-2. Role e toque em **Adicionar à Tela de Início**.  
+1. Toque em **Compartilhar** (□↑).  
+2. **Adicionar à Tela de Início**.  
 3. Confirme **Adicionar**.  
 4. Abra o ícone **Timer Plus**.
 
-> Link reserva (se o de cima falhar):  
-> https://raw.githack.com/gabrielmarsaro/timer-plus/main/docs/index.html
-
-## Ativar domínio próprio (opcional)
-
-Depois que o Pages estiver ligado, também funciona em:
-
-**https://gabrielmarsaro.github.io/timer-plus/**
-
-1. Abra https://github.com/gabrielmarsaro/timer-plus/settings/pages  
-2. **Source** → **Deploy from a branch**  
-3. Branch: **main** · pasta: **/docs** · Save  
+> Este link fica no ar por alguns dias. Se expirar, avise que eu publico de novo.
 
 ## Android (APK)
 
@@ -33,8 +22,6 @@ Depois que o Pages estiver ligado, também funciona em:
 1. Abra no Chrome e baixe.  
 2. Permita **fontes desconhecidas** se pedir.  
 3. Instale.
-
-Página de download: [docs/baixar.html](https://cdn.jsdelivr.net/gh/gabrielmarsaro/timer-plus@main/docs/baixar.html)
 
 ## Modos
 
@@ -50,6 +37,6 @@ Página de download: [docs/baixar.html](https://cdn.jsdelivr.net/gh/gabrielmarsa
 ```bash
 npm install
 npm run dev
-npm run build:docs   # atualiza pasta docs/ (site estático)
-npm run android:apk  # gera APK
+npm run build:docs
+npm run android:apk
 ```
