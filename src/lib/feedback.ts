@@ -3,25 +3,24 @@ import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics'
 import type { GeneralSettings, Phase } from '../types'
 
 type SoundKind = 'tick' | 'phase' | 'done' | 'warning' | 'preview'
+type SessionType = 'auto' | 'ambient' | 'transient' | 'playback'
 
 let audioCtx: AudioContext | null = null
 let settings: GeneralSettings | null = null
 let lastSpoken = ''
 let torchTrack: MediaStreamTrack | null = null
-let duckGain: GainNode | null = null
 let unlocked = false
-let htmlBeep: HTMLAudioElement | null = null
+let htmlAlert: HTMLAudioElement | null = null
+let htmlTick: HTMLAudioElement | null = null
 let speakChain: Promise<void> = Promise.resolve()
+let externalMusic = false
+let mediaWatchBound = false
 
 const AudioCtxCtor =
   typeof window !== 'undefined'
     ? window.AudioContext ||
       (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
     : undefined
-
-/** Prebuilt tiny WAV (~60ms @ 760Hz) — avoids building audio on the INICIAR tap. */
-const BEEP_DATA_URI =
-  'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA='
 
 export function isAppleTouchWeb(): boolean {
   if (typeof navigator === 'undefined') return false
@@ -41,6 +40,7 @@ function getCtx(): AudioContext | null {
   if (!audioCtx) {
     try {
       audioCtx = new AudioCtxCtor()
+      bindMediaWatch(audioCtx)
     } catch {
       return null
     }
@@ -48,18 +48,76 @@ function getCtx(): AudioContext | null {
   return audioCtx
 }
 
-function getHtmlBeep(): HTMLAudioElement {
-  if (!htmlBeep) {
-    htmlBeep = new Audio(BEEP_DATA_URI)
-    htmlBeep.preload = 'auto'
-    htmlBeep.setAttribute('playsinline', 'true')
-  }
-  return htmlBeep
+function bindMediaWatch(ctx: AudioContext): void {
+  if (mediaWatchBound) return
+  mediaWatchBound = true
+  ctx.addEventListener('statechange', () => {
+    const state = ctx.state as string
+    if (state === 'interrupted') {
+      externalMusic = true
+      return
+    }
+    if (state === 'running' && document.visibilityState === 'visible') {
+      // Other music often keeps us interrupted/suspended; running again → clear.
+      externalMusic = false
+    }
+  })
 }
 
-function playHtmlBeep(volumeLevel: number): void {
+/** Build a short real tick/beep WAV (done once, lazily). */
+function buildToneDataUri(freq: number, ms: number, volumeLevel = 0.4): string {
+  const sampleRate = 22050
+  const samples = Math.max(1, Math.floor((sampleRate * ms) / 1000))
+  const data = new ArrayBuffer(44 + samples * 2)
+  const view = new DataView(data)
+  const writeStr = (offset: number, text: string) => {
+    for (let i = 0; i < text.length; i += 1) view.setUint8(offset + i, text.charCodeAt(i))
+  }
+  writeStr(0, 'RIFF')
+  view.setUint32(4, 36 + samples * 2, true)
+  writeStr(8, 'WAVE')
+  writeStr(12, 'fmt ')
+  view.setUint32(16, 16, true)
+  view.setUint16(20, 1, true)
+  view.setUint16(22, 1, true)
+  view.setUint32(24, sampleRate, true)
+  view.setUint32(28, sampleRate * 2, true)
+  view.setUint16(32, 2, true)
+  view.setUint16(34, 16, true)
+  writeStr(36, 'data')
+  view.setUint32(40, samples * 2, true)
+  for (let i = 0; i < samples; i += 1) {
+    const t = i / sampleRate
+    const env = Math.min(1, i / 120) * Math.min(1, (samples - i) / 250)
+    const sample = Math.sin(2 * Math.PI * freq * t) * env * volumeLevel
+    view.setInt16(44 + i * 2, Math.max(-1, Math.min(1, sample)) * 0x7fff, true)
+  }
+  const bytes = new Uint8Array(data)
+  let binary = ''
+  for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]!)
+  return `data:audio/wav;base64,${btoa(binary)}`
+}
+
+function getHtmlAlert(): HTMLAudioElement {
+  if (!htmlAlert) {
+    htmlAlert = new Audio(buildToneDataUri(880, 90, 0.45))
+    htmlAlert.preload = 'auto'
+    htmlAlert.setAttribute('playsinline', 'true')
+  }
+  return htmlAlert
+}
+
+function getHtmlTick(): HTMLAudioElement {
+  if (!htmlTick) {
+    htmlTick = new Audio(buildToneDataUri(1350, 35, 0.28))
+    htmlTick.preload = 'auto'
+    htmlTick.setAttribute('playsinline', 'true')
+  }
+  return htmlTick
+}
+
+function playHtml(audio: HTMLAudioElement, volumeLevel: number): void {
   try {
-    const audio = getHtmlBeep()
     audio.volume = Math.max(0.05, Math.min(1, volumeLevel))
     audio.currentTime = 0
     void audio.play().catch(() => undefined)
@@ -68,11 +126,60 @@ function playHtmlBeep(volumeLevel: number): void {
   }
 }
 
+function setAudioSession(type: SessionType): void {
+  try {
+    const session = (
+      navigator as Navigator & { audioSession?: { type: string } }
+    ).audioSession
+    if (session) session.type = type
+  } catch {
+    // ignore — unsupported browsers
+  }
+}
+
 /**
- * Unlock audio inside a user gesture. Must NOT await from the UI —
- * awaiting play()/resume() hangs Safari on iPhone and freezes INICIAR.
+ * Best-effort: other music apps (Spotify/Deezer/YouTube) holding audio focus.
+ * Web cannot read other apps directly; we use AudioContext interruption +
+ * suspended-while-visible after a resume attempt.
+ */
+export function refreshExternalMusicState(): boolean {
+  if (!unlocked) return externalMusic
+  const ctx = getCtx()
+  if (!ctx) return externalMusic
+
+  const state = ctx.state as string
+  if (state === 'interrupted') {
+    externalMusic = true
+    return true
+  }
+
+  if (state === 'suspended' && document.visibilityState === 'visible') {
+    void ctx.resume().then(() => {
+      const next = ctx.state as string
+      if (next === 'suspended' || next === 'interrupted') {
+        externalMusic = true
+      } else if (next === 'running') {
+        externalMusic = false
+      }
+    }).catch(() => {
+      externalMusic = true
+    })
+  }
+
+  return externalMusic
+}
+
+function shouldSilenceAmbient(): boolean {
+  // "Ducking" setting = respect background music (mute ticks / chatter).
+  if (!settings?.ducking) return false
+  return refreshExternalMusicState()
+}
+
+/**
+ * Unlock audio inside a user gesture. Must NOT await from the UI.
  */
 export function unlockFeedback(): void {
+  setAudioSession('ambient')
   const ctx = getCtx()
   if (ctx) {
     try {
@@ -91,13 +198,22 @@ export function unlockFeedback(): void {
   }
 
   try {
-    const audio = getHtmlBeep()
-    audio.volume = 0.01
-    audio.currentTime = 0
-    void audio.play().then(() => {
+    const tick = getHtmlTick()
+    const alert = getHtmlAlert()
+    tick.volume = 0.01
+    alert.volume = 0.01
+    void tick.play().then(() => {
       try {
-        audio.pause()
-        audio.currentTime = 0
+        tick.pause()
+        tick.currentTime = 0
+      } catch {
+        // ignore
+      }
+    }).catch(() => undefined)
+    void alert.play().then(() => {
+      try {
+        alert.pause()
+        alert.currentTime = 0
       } catch {
         // ignore
       }
@@ -106,7 +222,6 @@ export function unlockFeedback(): void {
     // ignore
   }
 
-  // Do NOT call speechSynthesis.speak/cancel here — that freezes iOS Safari.
   try {
     window.speechSynthesis?.getVoices?.()
   } catch {
@@ -114,12 +229,14 @@ export function unlockFeedback(): void {
   }
 
   unlocked = true
+  refreshExternalMusicState()
 }
 
 export function ensureAudioReady(): void {
   if (!unlocked) return
   const ctx = getCtx()
   if (ctx?.state === 'suspended') void ctx.resume().catch(() => undefined)
+  refreshExternalMusicState()
 }
 
 function volume(): number {
@@ -129,6 +246,7 @@ function volume(): number {
 
 async function vibrate(kind: SoundKind): Promise<void> {
   if (!settings?.vibration) return
+  if (kind === 'tick' && shouldSilenceAmbient()) return
 
   const pattern =
     kind === 'done' ? [40, 60, 80] : kind === 'warning' ? [30, 40, 30] : kind === 'tick' ? [12] : [35]
@@ -194,19 +312,24 @@ function playSound(kind: SoundKind): void {
   if (kind === 'tick' && !settings.ticking) return
   if (kind !== 'tick' && !settings.soundEffect && kind !== 'preview') return
 
+  // With background music: keep only start/end (and warning) alerts — no ticks.
+  if (kind === 'tick' && shouldSilenceAmbient()) return
+
   const vol = volume()
   const soundType = settings.soundType
 
-  if (isAppleTouchWeb() && kind !== 'tick') {
-    playHtmlBeep(vol * (kind === 'done' ? 1 : 0.85))
+  if (kind === 'tick') {
+    setAudioSession('ambient')
+    playHtml(getHtmlTick(), vol * 0.55)
+    tone([1200], 0.035, 'square', vol * 0.1)
+    return
   }
 
-  try {
-    if (kind === 'tick') {
-      tone([1200], 0.04, 'square', vol * 0.1)
-      return
-    }
+  // Alerts (start/end/warning) use transient session so they still cut through music.
+  setAudioSession('transient')
+  playHtml(getHtmlAlert(), vol * (kind === 'done' ? 1 : 0.85))
 
+  try {
     if (soundType === 'bell') {
       if (kind === 'done') tone([523, 659, 784], 0.55, 'sine', vol * 0.28)
       else if (kind === 'warning') tone([880, 660], 0.28, 'sine', vol * 0.26)
@@ -226,6 +349,9 @@ function playSound(kind: SoundKind): void {
     else tone([760], 0.16, 'square', vol * 0.2)
   } catch {
     // ignore
+  } finally {
+    // Return to ambient so ticks can be auto-silenced by the OS when music plays.
+    window.setTimeout(() => setAudioSession('ambient'), 700)
   }
 }
 
@@ -265,7 +391,6 @@ export function speak(text: string, force = false): void {
   const voice = pickVoice()
   if (voice) utter.voice = voice
 
-  // Queue speaks; avoid cancel() on iOS — it can freeze Safari.
   speakChain = speakChain
     .catch(() => undefined)
     .then(
@@ -287,7 +412,6 @@ export function speak(text: string, force = false): void {
           } catch {
             done()
           }
-          // Safety: never leave the chain stuck
           window.setTimeout(done, Math.max(2500, normalized.length * 180))
         }),
     )
@@ -313,7 +437,6 @@ export function previewVoice(): void {
 }
 
 export async function setTorch(enabled: boolean): Promise<void> {
-  // Camera torch prompt freezes/hangs iPhone Safari web — native only.
   if (!Capacitor.isNativePlatform()) return
 
   if (!enabled) {
@@ -352,29 +475,13 @@ export async function pulseTorch(): Promise<void> {
   }, 220)
 }
 
-export function applyDucking(active: boolean): void {
-  if (!settings?.ducking) return
-  try {
-    const ctx = getCtx()
-    if (!ctx) return
-    if (!duckGain) {
-      duckGain = ctx.createGain()
-      duckGain.connect(ctx.destination)
-    }
-    duckGain.gain.setTargetAtTime(active ? 0.15 : 1, ctx.currentTime, 0.05)
-  } catch {
-    // ignore
-  }
-}
-
 export function announcePhase(phase: Phase | null, next?: Phase | null): void {
   if (!phase) return
   ensureAudioReady()
   void vibrate('phase')
   playSound('phase')
-  applyDucking(true)
-  window.setTimeout(() => applyDucking(false), 900)
 
+  // Voice for phase start/end alerts always (even with music) — user asked for start/end alerts.
   const label = phase.label.toLowerCase()
   if (phase.kind === 'work' && phase.round) {
     speak(`${label}. Ronda ${phase.round}`)
@@ -382,7 +489,7 @@ export function announcePhase(phase: Phase | null, next?: Phase | null): void {
     speak(label)
   }
 
-  if (next) {
+  if (next && !shouldSilenceAmbient()) {
     window.setTimeout(() => {
       speak(`Em seguida, ${next.label.toLowerCase()}`)
     }, 1100)
@@ -402,7 +509,9 @@ export function onCountdownSecond(remaining: number, phase: Phase | null, warnin
   const whole = Math.ceil(remaining)
   ensureAudioReady()
 
-  if (settings?.ticking && whole > 0) {
+  const hush = shouldSilenceAmbient()
+
+  if (settings?.ticking && whole > 0 && !hush) {
     playSound('tick')
     void vibrate('tick')
   }
@@ -413,7 +522,8 @@ export function onCountdownSecond(remaining: number, phase: Phase | null, warnin
     speak(`${warning} segundos`)
   }
 
-  if (whole <= 3 && whole >= 1) {
+  // Countdown chatter stays off while music plays — only start/end alerts remain.
+  if (!hush && whole <= 3 && whole >= 1) {
     speak(String(whole))
   }
 }

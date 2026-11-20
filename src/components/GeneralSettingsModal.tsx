@@ -137,8 +137,11 @@ export function GeneralSettingsModal({
 
         <label className="native-row native-row-stack">
           <div>
-            <span>DUCKING</span>
-            <small>REDUZIR VOLUME DA MÚSICA</small>
+            <span>RESPEITAR MÚSICA</span>
+            <small>
+              SE SPOTIFY/DEEZER/YOUTUBE ESTIVER TOCANDO, TIRA O TIQUE-TAQUE E DEIXA SÓ ALERTAS DE
+              INÍCIO/FIM
+            </small>
           </div>
           <button
             type="button"
