@@ -4,16 +4,16 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## iPhone (Safari) — use este link
 
-Abra **no Safari** (não no Instagram/WhatsApp in-app browser):
+Abra **no Safari**:
 
-### https://endless-grid-au2pb8m.shipstatic.com/
+### https://slow-servant-l2xak.ship.place/
 
 1. Toque em **Compartilhar** (□↑).  
 2. **Adicionar à Tela de Início**.  
 3. Confirme **Adicionar**.  
 4. Abra o ícone **Timer Plus**.
 
-> Este link fica no ar por alguns dias. Se expirar, avise que eu publico de novo.
+Reserva: https://endless-grid-au2pb8m.shipstatic.com/
 
 ## Android (APK)
 
