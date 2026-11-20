@@ -144,7 +144,21 @@ export function RoundsScreen({
           <p className="play-label">{actionLabel}</p>
         </div>
 
-        <div className="stat-block stat-spacer" aria-hidden />
+        {focus ? (
+          <div className="stat-block">
+            <button
+              type="button"
+              className="live-reset-btn"
+              onClick={onReset}
+              aria-label="Reiniciar"
+            >
+              <ResetIcon />
+            </button>
+            <p className="stat-label">REINICIAR</p>
+          </div>
+        ) : (
+          <div className="stat-block stat-spacer" aria-hidden />
+        )}
       </div>
     </section>
   )

@@ -8,7 +8,7 @@ A Apple **não deixa instalar APK** (isso é Android). App nativo na App Store p
 
 ## iPhone (Safari) — som
 
-### https://timeless-flow-y7n8gex.shipstatic.com
+### https://shifting-flow-pg8b23q.shipstatic.com
 
 1. Abra no **Safari**.  
 2. **Desative o mute lateral** (switch acima dos botões de volume) e aumente o volume.  

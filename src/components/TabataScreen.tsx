@@ -144,10 +144,24 @@ export function TabataScreen({
           <p className="play-label">{actionLabel}</p>
         </div>
 
-        <div className="stat-block">
-          <p className="stat-value stat-yellow">{cyclesLeft}</p>
-          <p className="stat-label">CICLOS PARA TERMINAR</p>
-        </div>
+        {focus ? (
+          <div className="stat-block">
+            <button
+              type="button"
+              className="live-reset-btn"
+              onClick={onReset}
+              aria-label="Reiniciar"
+            >
+              <ResetIcon />
+            </button>
+            <p className="stat-label">REINICIAR</p>
+          </div>
+        ) : (
+          <div className="stat-block">
+            <p className="stat-value stat-yellow">{cyclesLeft}</p>
+            <p className="stat-label">CICLOS PARA TERMINAR</p>
+          </div>
+        )}
       </div>
     </section>
   )
