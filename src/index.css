@@ -155,6 +155,93 @@ button {
   min-height: 0;
   display: grid;
   grid-template-rows: 1.35fr 0.9fr;
+  transition: grid-template-rows 320ms ease;
+}
+
+.phase-stack.is-focus {
+  grid-template-rows: 1fr;
+  align-items: stretch;
+}
+
+.phase-stack.is-focus .phase-primary.is-star {
+  min-height: 100%;
+  justify-content: center;
+  border-radius: 0;
+  animation: phase-star-in 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.phase-time-hero {
+  font-size: clamp(6.2rem, 30vw, 11rem);
+  margin-top: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+}
+
+.phase-stack.is-focus .phase-label {
+  font-size: clamp(2rem, 9vw, 3.2rem);
+}
+
+@keyframes phase-star-in {
+  0% {
+    opacity: 0.35;
+    transform: scale(0.82);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.tabata-screen.is-live {
+  grid-template-rows: 0 minmax(0, 1fr) auto;
+}
+
+.tabata-screen.is-live .tabata-header {
+  opacity: 0;
+  height: 0;
+  overflow: hidden;
+  padding: 0;
+  pointer-events: none;
+}
+
+.tabata-screen.is-live .header-right .timer-edit-btn {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.controls-row.is-live {
+  padding-top: 10px;
+  padding-bottom: 14px;
+  background: transparent;
+  position: relative;
+  z-index: 2;
+}
+
+.controls-row.is-live .stat-block {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.85);
+}
+
+.controls-row.is-live .play-block {
+  transform: scale(1.08);
+  transition: transform 280ms ease;
+}
+
+.app-shell.is-timer-live .bottom-nav {
+  transform: translateY(110%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.app-shell.is-timer-live .app-main {
+  padding-bottom: var(--safe-bottom);
 }
 
 .configure-banner {
@@ -316,6 +403,7 @@ button.phase-block:not(:disabled) {
   grid-template-columns: repeat(4, 1fr);
   background: #000;
   border-top: 1px solid #151515;
+  transition: transform 320ms ease, opacity 240ms ease;
 }
 
 .nav-item {
@@ -653,32 +741,43 @@ button.phase-block:not(:disabled) {
   }
 }
 
-/* Tablet landscape: fases lado a lado */
+/* Tablet landscape: fases lado a lado (só no preview idle) */
 @media (min-width: 900px) and (orientation: landscape) {
   .tabata-screen {
     grid-template-rows: auto minmax(0, 1fr) auto;
   }
 
-  .phase-stack {
+  .phase-stack:not(.is-focus) {
     grid-template-columns: 1.15fr 0.85fr;
     grid-template-rows: 1fr;
     gap: 16px;
     padding: 8px 24px 0;
   }
 
-  .phase-block {
+  .phase-stack:not(.is-focus) .phase-block {
     margin-bottom: 0;
     min-height: 0;
   }
 
-  .phase-primary {
+  .phase-stack:not(.is-focus) .phase-primary,
+  .phase-stack:not(.is-focus) .phase-secondary {
     align-items: flex-start;
     padding-left: 8%;
   }
 
-  .phase-secondary {
-    align-items: flex-start;
-    padding-left: 8%;
+  .phase-stack.is-focus {
+    grid-template-columns: 1fr;
+    padding: 0 24px;
+  }
+
+  .phase-stack.is-focus .phase-primary.is-star {
+    align-items: center;
+    padding-left: 12px;
+    border-radius: 24px;
+  }
+
+  .phase-time-hero {
+    font-size: clamp(7rem, 18vw, 12rem);
   }
 
   .controls-row {

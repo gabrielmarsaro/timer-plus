@@ -188,11 +188,15 @@ export default function App() {
       await timer.start()
     }
 
+  const timerLive =
+    (tab === 'tabata' && tabata.status !== 'idle') ||
+    (tab === 'rounds' && rounds.status !== 'idle')
+
   return (
     <div
       className={`app-shell${screenFlash ? ' is-flashing' : ''}${
         generalSettings.lightColors ? ' theme-light' : ''
-      }`}
+      }${timerLive ? ' is-timer-live' : ''}`}
     >
       <main className="app-main">
         {tab === 'tabata' && (

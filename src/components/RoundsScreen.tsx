@@ -8,6 +8,7 @@ import {
   ResetIcon,
   TimerMiniIcon,
 } from './Icons'
+import { isPhaseFocusKind, PhaseHero } from './PhaseHero'
 
 interface RoundsScreenProps {
   status: TimerStatus
@@ -40,17 +41,26 @@ export function RoundsScreen({
   onToggle,
   onReset,
 }: RoundsScreenProps) {
+  const isLive = status === 'running' || status === 'paused'
+  const focus = isLive && isPhaseFocusKind(currentPhase?.kind)
+
   const primary =
     status === 'idle'
       ? {
           label: 'PREPARAR',
           time: formatTime(idlePrepare, timeFormat),
           color: '#f5e600',
+          key: 'idle-prepare',
         }
       : {
           label: currentPhase?.label ?? 'PREPARAR',
           time: formatTime(phaseRemaining, timeFormat),
           color: currentPhase?.color ?? '#f5e600',
+          key: [
+            currentPhase?.kind ?? 'prepare',
+            currentPhase?.round ?? 0,
+            currentPhase?.cycle ?? 0,
+          ].join('-'),
         }
 
   const secondary =
@@ -77,7 +87,7 @@ export function RoundsScreen({
     status === 'running' ? 'PAUSAR' : status === 'paused' ? 'CONTINUAR' : 'INICIAR'
 
   return (
-    <section className="tabata-screen">
+    <section className={`tabata-screen${focus ? ' is-live' : ''}`}>
       <header className="tabata-header">
         <button
           type="button"
@@ -114,19 +124,9 @@ export function RoundsScreen({
         </div>
       </header>
 
-      <div className="phase-stack">
-        <div className="phase-block phase-primary" style={{ background: primary.color }}>
-          <p className="phase-label">{primary.label}</p>
-          <p className="phase-time phase-time-lg">{primary.time}</p>
-        </div>
+      <PhaseHero focus={focus} primary={primary} secondary={secondary} />
 
-        <div className="phase-block phase-secondary" style={{ background: secondary.color }}>
-          <p className="phase-label">{secondary.label}</p>
-          <p className="phase-time phase-time-md">{secondary.time}</p>
-        </div>
-      </div>
-
-      <div className="controls-row controls-row-rounds">
+      <div className={`controls-row controls-row-rounds${focus ? ' is-live' : ''}`}>
         <div className="stat-block">
           <p className="stat-value stat-blue">{roundsLeft}</p>
           <p className="stat-label">RONDAS PARA TERMINAR</p>
