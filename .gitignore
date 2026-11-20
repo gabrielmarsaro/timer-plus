@@ -32,7 +32,6 @@ android/captures
 android/.idea
 *.apk
 !releases/timer-plus-debug.apk
-!public/timer-plus-debug.apk
 *.aab
 *.ap_
 *.dex

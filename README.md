@@ -2,38 +2,39 @@
 
 Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
-## iPhone (Safari)
+## iPhone (funciona agora)
 
-### 1) Ativar GitHub Pages (só uma vez)
+Abra no **Safari** (não no Chrome):
 
-1. Abra: https://github.com/gabrielmarsaro/timer-plus/settings/pages  
-2. Em **Build and deployment** → **Source**, escolha **GitHub Actions**.  
-3. Salve. O deploy roda sozinho no próximo push (ou em Actions → **Deploy GitHub Pages** → **Run workflow**).
+**https://cdn.jsdelivr.net/gh/gabrielmarsaro/timer-plus@main/docs/index.html**
 
-### 2) Abrir no iPhone
+1. Toque em **Compartilhar** (quadrado com seta para cima).  
+2. Role e toque em **Adicionar à Tela de Início**.  
+3. Confirme **Adicionar**.  
+4. Abra o ícone **Timer Plus**.
 
-No Safari:
+> Link reserva (se o de cima falhar):  
+> https://raw.githack.com/gabrielmarsaro/timer-plus/main/docs/index.html
+
+## Ativar domínio próprio (opcional)
+
+Depois que o Pages estiver ligado, também funciona em:
 
 **https://gabrielmarsaro.github.io/timer-plus/**
 
-1. Toque em **Compartilhar** (quadrado com seta).  
-2. Toque em **Adicionar à Tela de Início**.  
-3. Confirme **Adicionar**.  
-4. Abra o ícone **Timer Plus** como um app.
-
-> No iPhone não dá para instalar APK. A versão web na Tela de Início é o caminho certo (sem App Store).
+1. Abra https://github.com/gabrielmarsaro/timer-plus/settings/pages  
+2. **Source** → **Deploy from a branch**  
+3. Branch: **main** · pasta: **/docs** · Save  
 
 ## Android (APK)
-
-Download direto:
 
 **https://github.com/gabrielmarsaro/timer-plus/raw/main/releases/timer-plus-debug.apk**
 
 1. Abra no Chrome e baixe.  
 2. Permita **fontes desconhecidas** se pedir.  
-3. Instale / atualize.
+3. Instale.
 
-Também há a página: https://gabrielmarsaro.github.io/timer-plus/baixar.html
+Página de download: [docs/baixar.html](https://cdn.jsdelivr.net/gh/gabrielmarsaro/timer-plus@main/docs/baixar.html)
 
 ## Modos
 
@@ -49,21 +50,6 @@ Também há a página: https://gabrielmarsaro.github.io/timer-plus/baixar.html
 ```bash
 npm install
 npm run dev
+npm run build:docs   # atualiza pasta docs/ (site estático)
+npm run android:apk  # gera APK
 ```
-
-### Gerar APK Android
-
-```bash
-npm run android:apk
-```
-
-Arquivo: `android/app/build/outputs/apk/debug/app-debug.apk`
-
-## Scripts
-
-| Comando | Função |
-|---------|--------|
-| `npm run dev` | Servidor web local |
-| `npm run build` | Build web (`dist/`) |
-| `npm run android:apk` | Gera o APK debug |
-| `npm run smoke` | Teste rápido (Playwright) |
