@@ -4,26 +4,27 @@ Timer de treino HIIT/Tabata para **celular, tablet e Android** (instalação por
 
 ## Baixar o APK (tablet / celular)
 
-👉 **[Download timer-plus-debug.apk](https://github.com/gabrielmarsaro/timer-plus/raw/main/releases/timer-plus-debug.apk)**
+> O repositório no GitHub está **privado**. Por isso o link do GitHub **não baixa** em outro celular sem login.
 
-Ou no GitHub: abra a pasta [`releases/`](https://github.com/gabrielmarsaro/timer-plus/tree/main/releases) e clique no arquivo `timer-plus-debug.apk` → **Download**.
+### Forma fácil de compartilhar
 
-### Modos
+Use a página pública `/baixar.html` do app publicado no Cursor (escolha visibilidade **Public**).  
+No celular: abra o link → **BAIXAR APK** → instalar.
 
-| Aba | Status |
-|-----|--------|
-| **Tabata** | Pronto |
-| **Rondas** | Pronto (boxe/MMA: preparar → ronda → descanso) |
-| Cronómetro | Em breve |
-| Mais | Em breve |
+### Se quiser usar o GitHub
 
-### Instalar / atualizar no tablet
+Deixe o repo público:  
+https://github.com/gabrielmarsaro/timer-plus/settings → Danger Zone → Change visibility → Public.
 
-1. No tablet, abra o link acima (Chrome) e baixe o APK.
-2. Abra o arquivo baixado.
-3. Se bloquear, ative **Instalar apps desconhecidos** para o Chrome/Arquivos.
-4. Toque em **Instalar** / **Atualizar** → **Abrir**.
-5. Abra a aba **RONDAS** na barra inferior.
+Depois este link funciona em qualquer aparelho:  
+https://github.com/gabrielmarsaro/timer-plus/raw/main/releases/timer-plus-debug.apk
+
+### Instalar no Android
+
+1. Baixe o APK no Chrome.
+2. Abra o arquivo.
+3. Permita **fontes desconhecidas** se pedir.
+4. Instale / atualize.
 
 ## Rodar no navegador
 
