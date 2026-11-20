@@ -187,24 +187,27 @@ export default function App() {
 
   const makeToggle =
     (timer: typeof tabata) =>
-    async () => {
-      await unlockFeedback()
+    () => {
+      // Never await audio unlock — that froze INICIAR on iPhone Safari.
+      unlockFeedback()
+
       if (timer.status === 'running') {
         timer.pause()
         return
       }
       if (timer.status === 'paused') {
-        await timer.resume()
+        void timer.resume()
         return
       }
       if (isAppleTouchWeb()) {
         const seen = sessionStorage.getItem('timer-plus:ios-audio-tip')
         if (!seen) {
           sessionStorage.setItem('timer-plus:ios-audio-tip', '1')
-          setIosAudioTip(true)
+          // Show tip after start so it never blocks the first paint/tick.
+          window.setTimeout(() => setIosAudioTip(true), 500)
         }
       }
-      await timer.start()
+      void timer.start()
     }
 
   const timerLive =
@@ -233,7 +236,7 @@ export default function App() {
             timeFormat={generalSettings.timeFormat}
             onOpenGeneralSettings={() => setGeneralOpen(true)}
             onOpenWorkoutEdit={() => setWorkoutEditOpen(true)}
-            onToggle={() => void makeToggle(tabata)()}
+            onToggle={makeToggle(tabata)}
             onReset={tabata.reset}
           />
         )}
@@ -251,7 +254,7 @@ export default function App() {
             timeFormat={generalSettings.timeFormat}
             onOpenGeneralSettings={() => setGeneralOpen(true)}
             onOpenWorkoutEdit={() => setWorkoutEditOpen(true)}
-            onToggle={() => void makeToggle(rounds)()}
+            onToggle={makeToggle(rounds)}
             onReset={rounds.reset}
           />
         )}

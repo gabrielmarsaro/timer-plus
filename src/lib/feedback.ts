@@ -11,6 +11,7 @@ let torchTrack: MediaStreamTrack | null = null
 let duckGain: GainNode | null = null
 let unlocked = false
 let htmlBeep: HTMLAudioElement | null = null
+let speakChain: Promise<void> = Promise.resolve()
 
 const AudioCtxCtor =
   typeof window !== 'undefined'
@@ -18,111 +19,69 @@ const AudioCtxCtor =
       (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
     : undefined
 
+/** Prebuilt tiny WAV (~60ms @ 760Hz) — avoids building audio on the INICIAR tap. */
+const BEEP_DATA_URI =
+  'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA='
+
 export function isAppleTouchWeb(): boolean {
   if (typeof navigator === 'undefined') return false
   if (Capacitor.isNativePlatform()) return false
-  return /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+  return (
+    /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  )
 }
 
 export function configureFeedback(next: GeneralSettings): void {
   settings = next
 }
 
-function getCtx(): AudioContext {
-  if (!AudioCtxCtor) throw new Error('AudioContext unavailable')
-  if (!audioCtx) audioCtx = new AudioCtxCtor()
+function getCtx(): AudioContext | null {
+  if (!AudioCtxCtor) return null
+  if (!audioCtx) {
+    try {
+      audioCtx = new AudioCtxCtor()
+    } catch {
+      return null
+    }
+  }
   return audioCtx
-}
-
-/** Tiny WAV beep used as an HTMLAudio unlock/fallback on iOS Safari. */
-function buildBeepDataUri(freq = 880, ms = 80): string {
-  const sampleRate = 22050
-  const samples = Math.floor((sampleRate * ms) / 1000)
-  const data = new ArrayBuffer(44 + samples * 2)
-  const view = new DataView(data)
-  const writeStr = (offset: number, text: string) => {
-    for (let i = 0; i < text.length; i += 1) view.setUint8(offset + i, text.charCodeAt(i))
-  }
-  writeStr(0, 'RIFF')
-  view.setUint32(4, 36 + samples * 2, true)
-  writeStr(8, 'WAVE')
-  writeStr(12, 'fmt ')
-  view.setUint32(16, 16, true)
-  view.setUint16(20, 1, true)
-  view.setUint16(22, 1, true)
-  view.setUint32(24, sampleRate, true)
-  view.setUint32(28, sampleRate * 2, true)
-  view.setUint16(32, 2, true)
-  view.setUint16(34, 16, true)
-  writeStr(36, 'data')
-  view.setUint32(40, samples * 2, true)
-  for (let i = 0; i < samples; i += 1) {
-    const t = i / sampleRate
-    const env = Math.min(1, i / 200) * Math.min(1, (samples - i) / 400)
-    const sample = Math.sin(2 * Math.PI * freq * t) * env * 0.35
-    view.setInt16(44 + i * 2, Math.max(-1, Math.min(1, sample)) * 0x7fff, true)
-  }
-  const bytes = new Uint8Array(data)
-  let binary = ''
-  for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]!)
-  return `data:audio/wav;base64,${btoa(binary)}`
 }
 
 function getHtmlBeep(): HTMLAudioElement {
   if (!htmlBeep) {
-    htmlBeep = new Audio(buildBeepDataUri(760, 60))
+    htmlBeep = new Audio(BEEP_DATA_URI)
     htmlBeep.preload = 'auto'
     htmlBeep.setAttribute('playsinline', 'true')
   }
   return htmlBeep
 }
 
-async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<null>((resolve) => {
-        window.setTimeout(() => resolve(null), ms)
-      }),
-    ])
-  } catch {
-    return null
-  }
-}
-
-async function playHtmlBeep(volumeLevel: number): Promise<void> {
+function playHtmlBeep(volumeLevel: number): void {
   try {
     const audio = getHtmlBeep()
     audio.volume = Math.max(0.05, Math.min(1, volumeLevel))
     audio.currentTime = 0
-    await withTimeout(audio.play(), 400)
+    void audio.play().catch(() => undefined)
   } catch {
-    // ignore — may still be blocked by silent switch
+    // ignore
   }
 }
 
-async function resumeCtx(): Promise<AudioContext | null> {
-  try {
-    const ctx = getCtx()
-    if (ctx.state === 'suspended') await ctx.resume()
-    return ctx
-  } catch {
-    return null
-  }
-}
-
-/** Must run inside a user gesture (INICIAR / preview). Critical on iPhone Safari. */
-export async function unlockFeedback(): Promise<void> {
-  const ctx = await withTimeout(resumeCtx().then((value) => value), 400)
-
+/**
+ * Unlock audio inside a user gesture. Must NOT await from the UI —
+ * awaiting play()/resume() hangs Safari on iPhone and freezes INICIAR.
+ */
+export function unlockFeedback(): void {
+  const ctx = getCtx()
   if (ctx) {
     try {
+      if (ctx.state === 'suspended') void ctx.resume().catch(() => undefined)
       const buffer = ctx.createBuffer(1, 1, ctx.sampleRate)
       const source = ctx.createBufferSource()
-      source.buffer = buffer
       const gain = ctx.createGain()
-      gain.gain.value = 0.001
+      gain.gain.value = 0.0001
+      source.buffer = buffer
       source.connect(gain)
       gain.connect(ctx.destination)
       source.start(0)
@@ -131,35 +90,25 @@ export async function unlockFeedback(): Promise<void> {
     }
   }
 
-  // HTMLAudio unlock path (often more reliable on iOS after a tap)
   try {
     const audio = getHtmlBeep()
-    audio.volume = 0.05
+    audio.volume = 0.01
     audio.currentTime = 0
-    await withTimeout(audio.play(), 400)
-    try {
-      audio.pause()
-      audio.currentTime = 0
-    } catch {
-      // ignore
-    }
+    void audio.play().then(() => {
+      try {
+        audio.pause()
+        audio.currentTime = 0
+      } catch {
+        // ignore
+      }
+    }).catch(() => undefined)
   } catch {
     // ignore
   }
 
-  // Prime speechSynthesis during the same gesture (iOS requirement)
+  // Do NOT call speechSynthesis.speak/cancel here — that freezes iOS Safari.
   try {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel()
-      window.speechSynthesis.resume?.()
-      const warm = new SpeechSynthesisUtterance(' ')
-      warm.volume = 0.01
-      warm.rate = 2
-      warm.lang = 'pt-BR'
-      window.speechSynthesis.speak(warm)
-      window.setTimeout(() => window.speechSynthesis.cancel(), 80)
-      window.speechSynthesis.getVoices()
-    }
+    window.speechSynthesis?.getVoices?.()
   } catch {
     // ignore
   }
@@ -167,14 +116,14 @@ export async function unlockFeedback(): Promise<void> {
   unlocked = true
 }
 
-export async function ensureAudioReady(): Promise<void> {
+export function ensureAudioReady(): void {
   if (!unlocked) return
-  await resumeCtx()
+  const ctx = getCtx()
+  if (ctx?.state === 'suspended') void ctx.resume().catch(() => undefined)
 }
 
 function volume(): number {
   const base = Math.max(0.05, settings?.volume ?? 0.75)
-  // iPhone Safari web audio is quieter; nudge it up a bit
   return isAppleTouchWeb() ? Math.min(1, base * 1.25) : base
 }
 
@@ -196,7 +145,7 @@ async function vibrate(kind: SoundKind): Promise<void> {
       return
     }
   } catch {
-    // fall through to browser vibrate
+    // fall through
   }
 
   try {
@@ -212,8 +161,11 @@ function tone(
   type: OscillatorType,
   gainLevel: number,
 ): void {
-  void resumeCtx().then((ctx) => {
+  try {
+    const ctx = getCtx()
     if (!ctx) return
+    if (ctx.state === 'suspended') void ctx.resume().catch(() => undefined)
+
     const now = ctx.currentTime
     const master = ctx.createGain()
     master.gain.value = gainLevel
@@ -232,7 +184,9 @@ function tone(
       osc.start(now + index * 0.02)
       osc.stop(now + duration + 0.03)
     })
-  })
+  } catch {
+    // ignore
+  }
 }
 
 function playSound(kind: SoundKind): void {
@@ -243,9 +197,8 @@ function playSound(kind: SoundKind): void {
   const vol = volume()
   const soundType = settings.soundType
 
-  // HTMLAudio fallback first on iPhone (keeps audio session warm)
   if (isAppleTouchWeb() && kind !== 'tick') {
-    void playHtmlBeep(vol * (kind === 'done' ? 1 : 0.85))
+    playHtmlBeep(vol * (kind === 'done' ? 1 : 0.85))
   }
 
   try {
@@ -268,7 +221,6 @@ function playSound(kind: SoundKind): void {
       return
     }
 
-    // beep
     if (kind === 'done') tone([880, 1175], 0.45, 'square', vol * 0.2)
     else if (kind === 'warning') tone([990], 0.18, 'square', vol * 0.2)
     else tone([760], 0.16, 'square', vol * 0.2)
@@ -305,49 +257,65 @@ export function speak(text: string, force = false): void {
   if (!force && normalized === lastSpoken) return
   lastSpoken = normalized
 
-  try {
-    window.speechSynthesis.cancel()
-    window.speechSynthesis.resume?.()
-    const utter = new SpeechSynthesisUtterance(normalized)
-    utter.lang = 'pt-BR'
-    utter.rate = isAppleTouchWeb() ? 1 : 1.05
-    utter.pitch = settings?.voice === 'luciana' ? 1.05 : 1
-    utter.volume = Math.max(0.6, volume())
-    const voice = pickVoice()
-    if (voice) utter.voice = voice
-    // Slight delay helps iOS after cancel()
-    window.setTimeout(() => {
-      try {
-        window.speechSynthesis.speak(utter)
-      } catch {
-        // ignore
-      }
-    }, isAppleTouchWeb() ? 40 : 0)
-  } catch {
-    // ignore
-  }
+  const utter = new SpeechSynthesisUtterance(normalized)
+  utter.lang = 'pt-BR'
+  utter.rate = isAppleTouchWeb() ? 1 : 1.05
+  utter.pitch = settings?.voice === 'luciana' ? 1.05 : 1
+  utter.volume = Math.max(0.6, volume())
+  const voice = pickVoice()
+  if (voice) utter.voice = voice
+
+  // Queue speaks; avoid cancel() on iOS — it can freeze Safari.
+  speakChain = speakChain
+    .catch(() => undefined)
+    .then(
+      () =>
+        new Promise<void>((resolve) => {
+          const done = () => resolve()
+          utter.onend = done
+          utter.onerror = done
+          try {
+            if (!isAppleTouchWeb()) {
+              try {
+                window.speechSynthesis.cancel()
+              } catch {
+                // ignore
+              }
+            }
+            window.speechSynthesis.resume?.()
+            window.speechSynthesis.speak(utter)
+          } catch {
+            done()
+          }
+          // Safety: never leave the chain stuck
+          window.setTimeout(done, Math.max(2500, normalized.length * 180))
+        }),
+    )
 }
 
 export function previewSound(): void {
-  void unlockFeedback().then(() => {
-    void vibrate('phase')
-    const previous = settings
-    if (previous) {
-      const enabled = { ...previous, soundEffect: true }
-      settings = enabled
-      playSound('phase')
-      settings = previous
-    } else {
-      playSound('phase')
-    }
-  })
+  unlockFeedback()
+  void vibrate('phase')
+  const previous = settings
+  if (previous) {
+    const enabled = { ...previous, soundEffect: true }
+    settings = enabled
+    playSound('phase')
+    settings = previous
+  } else {
+    playSound('phase')
+  }
 }
 
 export function previewVoice(): void {
-  void unlockFeedback().then(() => speak('Preparar. Exercício. Descanso.', true))
+  unlockFeedback()
+  speak('Preparar. Exercício. Descanso.', true)
 }
 
 export async function setTorch(enabled: boolean): Promise<void> {
+  // Camera torch prompt freezes/hangs iPhone Safari web — native only.
+  if (!Capacitor.isNativePlatform()) return
+
   if (!enabled) {
     try {
       torchTrack?.stop()
@@ -377,6 +345,7 @@ export async function setTorch(enabled: boolean): Promise<void> {
 
 export async function pulseTorch(): Promise<void> {
   if (!settings?.flashlight) return
+  if (!Capacitor.isNativePlatform()) return
   await setTorch(true)
   window.setTimeout(() => {
     void setTorch(false)
@@ -385,19 +354,22 @@ export async function pulseTorch(): Promise<void> {
 
 export function applyDucking(active: boolean): void {
   if (!settings?.ducking) return
-  void resumeCtx().then((ctx) => {
+  try {
+    const ctx = getCtx()
     if (!ctx) return
     if (!duckGain) {
       duckGain = ctx.createGain()
       duckGain.connect(ctx.destination)
     }
     duckGain.gain.setTargetAtTime(active ? 0.15 : 1, ctx.currentTime, 0.05)
-  })
+  } catch {
+    // ignore
+  }
 }
 
 export function announcePhase(phase: Phase | null, next?: Phase | null): void {
   if (!phase) return
-  void ensureAudioReady()
+  ensureAudioReady()
   void vibrate('phase')
   playSound('phase')
   applyDucking(true)
@@ -418,7 +390,7 @@ export function announcePhase(phase: Phase | null, next?: Phase | null): void {
 }
 
 export function announceDone(): void {
-  void ensureAudioReady()
+  ensureAudioReady()
   void vibrate('done')
   playSound('done')
   speak('Treino concluído')
@@ -428,7 +400,7 @@ export function announceDone(): void {
 export function onCountdownSecond(remaining: number, phase: Phase | null, warning = 0): void {
   if (!phase) return
   const whole = Math.ceil(remaining)
-  void ensureAudioReady()
+  ensureAudioReady()
 
   if (settings?.ticking && whole > 0) {
     playSound('tick')

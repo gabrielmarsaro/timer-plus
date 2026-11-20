@@ -8,7 +8,7 @@ A Apple **não deixa instalar APK** (isso é Android). App nativo na App Store p
 
 ## iPhone (Safari) — som
 
-### https://obscured-tide-555baxe.shipstatic.com
+### https://timeless-flow-y7n8gex.shipstatic.com
 
 1. Abra no **Safari**.  
 2. **Desative o mute lateral** (switch acima dos botões de volume) e aumente o volume.  
