@@ -55,6 +55,11 @@ export function GeneralSettingsModal({
       </header>
 
       <div className="native-sheet-body">
+        <p className="settings-note">
+          No iPhone o app roda no Safari (a Apple não deixa instalar APK). Para ouvir sons:
+          desative o mute lateral, aumente o volume e toque em INICIAR.
+        </p>
+
         <label className="native-row">
           <span>EFEITO SONORO</span>
           <button

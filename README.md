@@ -2,15 +2,20 @@
 
 Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
-## iPhone (Safari)
+## Por que no iPhone é web?
 
-### https://hybrid-comet-5wn2wku.shipstatic.com/
+A Apple **não deixa instalar APK** (isso é Android). App nativo na App Store precisa conta de desenvolvedor Apple + Mac/Xcode. Por isso no iPhone usamos o **Safari → Adicionar à Tela de Início** (funciona como app, sem App Store).
+
+## iPhone (Safari) — som
+
+### https://obscured-tide-555baxe.shipstatic.com
 
 1. Abra no **Safari**.  
-2. **Compartilhar** → **Adicionar à Tela de Início**.  
-3. Abra o ícone **Timer Plus**.
+2. **Desative o mute lateral** (switch acima dos botões de volume) e aumente o volume.  
+3. **Compartilhar** → **Adicionar à Tela de Início**.  
+4. Abra o ícone e toque em **INICIAR** (o toque libera o áudio do Safari).
 
-No treino, **EXERCÍCIO** e **DESCANSO** ocupam a tela sozinhos (modo foco).
+> Com o mute ligado, o iPhone silencia sons da web — inclusive voz e beeps.
 
 ## Android (APK)
 

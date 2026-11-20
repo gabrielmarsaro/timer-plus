@@ -3,6 +3,7 @@ import { StatusBar, Style } from '@capacitor/status-bar'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { BottomNav } from './components/BottomNav'
 import { GeneralSettingsModal } from './components/GeneralSettingsModal'
+import { IosAudioTip } from './components/IosAudioTip'
 import { PlaceholderScreen } from './components/PlaceholderScreen'
 import { RoundsScreen } from './components/RoundsScreen'
 import { TabataScreen } from './components/TabataScreen'
@@ -12,7 +13,9 @@ import { useWakeLock } from './hooks/useWakeLock'
 import {
   announceDone,
   configureFeedback,
+  ensureAudioReady,
   feedbackPhaseStart,
+  isAppleTouchWeb,
   onCountdownSecond,
   unlockFeedback,
 } from './lib/feedback'
@@ -72,6 +75,7 @@ export default function App() {
   const [generalOpen, setGeneralOpen] = useState(false)
   const [workoutEditOpen, setWorkoutEditOpen] = useState(false)
   const [screenFlash, setScreenFlash] = useState(false)
+  const [iosAudioTip, setIosAudioTip] = useState(false)
 
   const flashScreen = useCallback(() => {
     if (!generalSettings.screenFlash) return
@@ -164,6 +168,14 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void ensureAudioReady()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
+
+  useEffect(() => {
     if (!Capacitor.isNativePlatform()) return
     void StatusBar.setStyle({
       style: generalSettings.lightColors ? Style.Light : Style.Dark,
@@ -184,6 +196,13 @@ export default function App() {
       if (timer.status === 'paused') {
         await timer.resume()
         return
+      }
+      if (isAppleTouchWeb()) {
+        const seen = sessionStorage.getItem('timer-plus:ios-audio-tip')
+        if (!seen) {
+          sessionStorage.setItem('timer-plus:ios-audio-tip', '1')
+          setIosAudioTip(true)
+        }
       }
       await timer.start()
     }
@@ -253,6 +272,8 @@ export default function App() {
       </main>
 
       <BottomNav active={tab} onChange={setTab} />
+
+      <IosAudioTip open={iosAudioTip} onClose={() => setIosAudioTip(false)} />
 
       {generalOpen ? (
         <GeneralSettingsModal

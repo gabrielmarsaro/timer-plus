@@ -1,0 +1,20 @@
+interface IosAudioTipProps {
+  open: boolean
+  onClose: () => void
+}
+
+export function IosAudioTip({ open, onClose }: IosAudioTipProps) {
+  if (!open) return null
+
+  return (
+    <div className="ios-audio-tip" role="status">
+      <p>
+        No iPhone: desative o <strong>mute lateral</strong> e aumente o volume dos botões.
+        Toque em <strong>INICIAR</strong> de novo se ainda estiver mudo.
+      </p>
+      <button type="button" className="ios-audio-tip-ok" onClick={onClose}>
+        OK
+      </button>
+    </div>
+  )
+}
