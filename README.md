@@ -13,15 +13,15 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## iPhone (Safari)
 
-**https://clear-outpost-q395snq.shipstatic.com**
+**https://fused-matrix-pgypg72.shipstatic.com**
 
 1. Abra no **Safari**.  
 2. Desative o **mute lateral** e aumente o volume.  
 3. **Compartilhar** → **Adicionar à Tela de Início**.
 
-## Android (APK) — versão **1.2.0**
+## Android (APK) — versão **1.3.0**
 
-**https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/9041fa65f02cdd3ad961066fab49fb18d85d7b20/releases/timer-plus-debug.apk**
+**https://github.com/gabrielmarsaro/timer-plus/raw/main/releases/timer-plus-debug.apk?v=1.3.0**
 
 1. Baixe no Chrome.  
 2. Permita **fontes desconhecidas** se pedir.  
@@ -29,7 +29,12 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
 
-Página de download: https://clear-outpost-q395snq.shipstatic.combaixar.html
+Página de download: https://fused-matrix-pgypg72.shipstatic.com/baixar.html
+
+## Música Tabata
+
+Batidas **próprias** do app (Web Audio): **Pulse 160**, **Drive 140**, **Storm 150**.  
+Fortes no exercício, suaves no descanso. Se Spotify/Deezer/YouTube estiver tocando e “Respeitar música” estiver ligado, a batida do app pausa e ficam só alertas de início/fim.
 
 ## Entrega em todas as plataformas
 
@@ -45,4 +50,5 @@ npm run android:apk
 npm run smoke
 node scripts/smoke-focus.mjs
 node scripts/smoke-stopwatch.mjs
+node scripts/smoke-music.mjs
 ```
