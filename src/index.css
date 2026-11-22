@@ -510,12 +510,19 @@ button.phase-block:not(:disabled) {
 }
 
 .stopwatch-time {
-  font-size: clamp(3.6rem, 16vw, 5.8rem);
+  margin: 0 auto;
+  min-width: 9.2ch;
+  text-align: center;
+  font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: clamp(3.4rem, 14vw, 5.4rem);
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
   color: var(--yellow);
+  /* Prevent subpixel reflow while digits change */
+  transform: translateZ(0);
 }
 
 .stopwatch-last-lap {
@@ -594,15 +601,19 @@ button.phase-block:not(:disabled) {
 
 .lap-split {
   text-align: center;
+  font-family: 'Roboto Mono', ui-monospace, Menlo, Consolas, monospace;
   font-size: 1.05rem;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
   color: #fff;
 }
 
 .lap-total {
   text-align: right;
+  font-family: 'Roboto Mono', ui-monospace, Menlo, Consolas, monospace;
   font-size: 0.92rem;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   color: var(--yellow);
 }
 

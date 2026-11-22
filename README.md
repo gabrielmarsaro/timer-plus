@@ -15,7 +15,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 Abra no Safari, desative o **mute lateral**, depois **Compartilhar → Adicionar à Tela de Início**.
 
-**https://viral-frame-8dazt45.shipstatic.com**
+**https://strong-petal-mz7ws4q.shipstatic.com**
 
 > A Apple não deixa instalar APK. A Tela de Início é o caminho no iPhone.
 

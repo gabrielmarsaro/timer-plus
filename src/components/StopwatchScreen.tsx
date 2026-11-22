@@ -64,7 +64,7 @@ export function StopwatchScreen({
       </header>
 
       <div className="stopwatch-stage">
-        <p className="stopwatch-time" aria-live="polite">
+        <p className="stopwatch-time" aria-live="off">
           {formatStopwatch(elapsedMs)}
         </p>
         {laps[0] ? (

@@ -31,6 +31,7 @@ export function useStopwatch(): UseStopwatchResult {
   const lapBaseRef = useRef(0)
   const rafRef = useRef(0)
   const lastTickRef = useRef<number | null>(null)
+  const lastShownCsRef = useRef(0)
 
   statusRef.current = status
   elapsedRef.current = elapsedMs
@@ -53,7 +54,12 @@ export function useStopwatch(): UseStopwatchResult {
       lastTickRef.current = now
       const next = elapsedRef.current + delta
       elapsedRef.current = next
-      setElapsedMs(next)
+      // Only re-render when the displayed centisecond changes — avoids jitter.
+      const shownCs = Math.floor(next / 10)
+      if (shownCs !== lastShownCsRef.current) {
+        lastShownCsRef.current = shownCs
+        setElapsedMs(shownCs * 10)
+      }
       rafRef.current = requestAnimationFrame(tick)
     },
     [],
@@ -71,11 +77,16 @@ export function useStopwatch(): UseStopwatchResult {
     setLaps([])
     elapsedRef.current = 0
     lapBaseRef.current = 0
+    lastShownCsRef.current = 0
     startLoop()
   }, [startLoop])
 
   const pause = useCallback(() => {
     stopLoop()
+    const shown = Math.floor(elapsedRef.current / 10) * 10
+    elapsedRef.current = shown
+    lastShownCsRef.current = shown / 10
+    setElapsedMs(shown)
     setStatus('paused')
   }, [stopLoop])
 
@@ -91,6 +102,7 @@ export function useStopwatch(): UseStopwatchResult {
     setLaps([])
     elapsedRef.current = 0
     lapBaseRef.current = 0
+    lastShownCsRef.current = 0
   }, [stopLoop])
 
   const lap = useCallback(() => {
