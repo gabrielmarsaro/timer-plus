@@ -528,7 +528,8 @@ export function onCountdownSecond(remaining: number, phase: Phase | null, warnin
   const whole = Math.ceil(remaining)
   ensureAudioReady()
 
-  const hush = shouldSilenceAmbient()
+  // YouTube soundtrack already fills the workout — keep only warnings/alerts.
+  const hush = shouldSilenceAmbient() || settings?.workoutMusicMode === 'youtube'
 
   if (settings?.ticking && whole > 0 && !hush) {
     playSound('tick')

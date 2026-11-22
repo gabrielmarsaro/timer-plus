@@ -46,7 +46,7 @@ const SCHEDULE_AHEAD = 0.12
 export function configureWorkoutMusic(next: GeneralSettings): void {
   settings = next
   track = next.workoutMusicTrack
-  if (!next.workoutMusic || next.workoutMusicTrack === 'off') {
+  if (next.workoutMusicMode !== 'beats' || next.workoutMusicTrack === 'off') {
     stopWorkoutMusic()
   }
 }
@@ -254,7 +254,11 @@ export function setExternalMusicBlocked(blocked: boolean): void {
 }
 
 export function syncWorkoutMusic(phase: Phase | null, isRunning: boolean): void {
-  if (!settings?.workoutMusic || settings.workoutMusicTrack === 'off' || !isRunning) {
+  if (
+    settings?.workoutMusicMode !== 'beats' ||
+    settings.workoutMusicTrack === 'off' ||
+    !isRunning
+  ) {
     stopWorkoutMusic()
     return
   }
@@ -293,7 +297,7 @@ export function previewWorkoutTrack(nextTrack: WorkoutTrack): void {
 
 export function isWorkoutMusicAudible(): boolean {
   return Boolean(
-    settings?.workoutMusic &&
+    settings?.workoutMusicMode === 'beats' &&
       settings.workoutMusicTrack !== 'off' &&
       running &&
       intensity !== 'off' &&

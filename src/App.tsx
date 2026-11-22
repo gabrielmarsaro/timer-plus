@@ -9,6 +9,7 @@ import { RoundsScreen } from './components/RoundsScreen'
 import { StopwatchScreen } from './components/StopwatchScreen'
 import { TabataScreen } from './components/TabataScreen'
 import { WorkoutEditModal } from './components/WorkoutEditModal'
+import { YoutubeMusicDock } from './components/YoutubeMusicDock'
 import { usePhaseTimer } from './hooks/usePhaseTimer'
 import { useStopwatch } from './hooks/useStopwatch'
 import { useWakeLock } from './hooks/useWakeLock'
@@ -23,6 +24,7 @@ import {
   unlockFeedback,
 } from './lib/feedback'
 import { pauseWorkoutMusic, stopWorkoutMusic, syncWorkoutMusic } from './lib/workoutMusic'
+import { getYoutubeTrack } from './lib/youtubeTabata'
 import { buildPhases, buildRoundsPhases } from './lib/buildPhases'
 import {
   DEFAULT_GENERAL_SETTINGS,
@@ -80,6 +82,8 @@ export default function App() {
   const [workoutEditOpen, setWorkoutEditOpen] = useState(false)
   const [screenFlash, setScreenFlash] = useState(false)
   const [iosAudioTip, setIosAudioTip] = useState(false)
+  const [youtubeDockOpen, setYoutubeDockOpen] = useState(false)
+  const [youtubeAutoplayKey, setYoutubeAutoplayKey] = useState(0)
 
   const flashScreen = useCallback(() => {
     if (!generalSettings.screenFlash) return
@@ -223,6 +227,15 @@ export default function App() {
     }
   }
 
+  const armYoutubeDock = () => {
+    if (generalSettings.workoutMusicMode !== 'youtube') {
+      setYoutubeDockOpen(false)
+      return
+    }
+    setYoutubeDockOpen(true)
+    setYoutubeAutoplayKey((key) => key + 1)
+  }
+
   const makeToggle =
     (timer: typeof tabata) =>
     () => {
@@ -234,10 +247,12 @@ export default function App() {
         return
       }
       if (timer.status === 'paused') {
+        armYoutubeDock()
         void timer.resume()
         return
       }
       maybeShowIosTip()
+      armYoutubeDock()
       void timer.start()
     }
 
@@ -266,11 +281,18 @@ export default function App() {
     (tab === 'tabata' && tabata.status !== 'idle') ||
     (tab === 'rounds' && rounds.status !== 'idle')
 
+  const youtubeTrack = getYoutubeTrack(generalSettings.youtubeTrackId)
+  const showYoutubeDock =
+    youtubeDockOpen &&
+    generalSettings.workoutMusicMode === 'youtube' &&
+    (tab === 'tabata' || tab === 'rounds') &&
+    (tab === 'tabata' ? tabata.status !== 'idle' : rounds.status !== 'idle')
+
   return (
     <div
       className={`app-shell${screenFlash ? ' is-flashing' : ''}${
         generalSettings.lightColors ? ' theme-light' : ''
-      }${timerLive ? ' is-timer-live' : ''}`}
+      }${timerLive ? ' is-timer-live' : ''}${showYoutubeDock ? ' has-yt-dock' : ''}`}
     >
       <main className="app-main">
         {tab === 'tabata' && (
@@ -332,6 +354,14 @@ export default function App() {
           />
         )}
       </main>
+
+      {showYoutubeDock ? (
+        <YoutubeMusicDock
+          track={youtubeTrack}
+          autoplayKey={youtubeAutoplayKey}
+          onClose={() => setYoutubeDockOpen(false)}
+        />
+      ) : null}
 
       <BottomNav active={tab} onChange={setTab} />
 

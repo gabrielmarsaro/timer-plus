@@ -2,7 +2,14 @@ import { useEffect, useState } from 'react'
 import { TIME_FORMATS } from '../lib/format'
 import { previewSound, previewVoice, unlockFeedback } from '../lib/feedback'
 import { previewWorkoutTrack, WORKOUT_TRACKS } from '../lib/workoutMusic'
-import type { GeneralSettings } from '../types'
+import { getYoutubeTrack, openYoutubeExternally, YOUTUBE_TABATA_TRACKS } from '../lib/youtubeTabata'
+import type { GeneralSettings, WorkoutMusicMode } from '../types'
+
+const MUSIC_MODES: Array<{ id: WorkoutMusicMode; label: string }> = [
+  { id: 'youtube', label: 'YOUTUBE' },
+  { id: 'beats', label: 'BATIDAS OFFLINE' },
+  { id: 'off', label: 'DESLIGADA' },
+]
 
 interface GeneralSettingsModalProps {
   open: boolean
@@ -152,56 +159,87 @@ export function GeneralSettingsModal({
           />
         </label>
 
-        <label className="native-row native-row-stack">
-          <div>
-            <span>MÚSICA TABATA</span>
-            <small>
-              BATIDAS PRÓPRIAS DO APP (PULSE / DRIVE / STORM) — SEM FAIXAS COM COPYRIGHT. FORTE NO
-              EXERCÍCIO, SUAVE NO DESCANSO
-            </small>
-          </div>
-          <button
-            type="button"
-            className={`toggle${draft.workoutMusic ? ' is-on' : ''}`}
-            aria-pressed={draft.workoutMusic}
-            onClick={() => {
-              const enabled = !draft.workoutMusic
-              const track =
-                enabled && draft.workoutMusicTrack === 'off' ? 'pulse' : draft.workoutMusicTrack
-              update({ workoutMusic: enabled, workoutMusicTrack: track })
-              if (enabled) {
-                window.setTimeout(() => {
-                  unlockFeedback()
-                  previewWorkoutTrack(track === 'off' ? 'pulse' : track)
-                }, 60)
-              }
-            }}
-          />
-        </label>
-
         <button
           type="button"
-          className="native-row native-link"
+          className="native-row native-link native-row-stack"
           onClick={() => {
-            const idx = WORKOUT_TRACKS.findIndex((item) => item.id === draft.workoutMusicTrack)
-            const next = WORKOUT_TRACKS[(idx + 1) % WORKOUT_TRACKS.length]
-            update({
-              workoutMusicTrack: next.id,
-              workoutMusic: next.id === 'off' ? false : true,
-            })
-            if (next.id !== 'off') {
+            const idx = MUSIC_MODES.findIndex((item) => item.id === draft.workoutMusicMode)
+            const next = MUSIC_MODES[(idx + 1) % MUSIC_MODES.length]!
+            update({ workoutMusicMode: next.id })
+            if (next.id === 'beats') {
               window.setTimeout(() => {
                 unlockFeedback()
-                previewWorkoutTrack(next.id)
+                previewWorkoutTrack(
+                  draft.workoutMusicTrack === 'off' ? 'pulse' : draft.workoutMusicTrack,
+                )
               }, 60)
             }
           }}
         >
-          <span>FAIXA</span>
+          <div>
+            <span>MÚSICA TABATA</span>
+            <small>
+              YOUTUBE = VÍDEOS PÚBLICOS (PLAYER NO APP OU APP YOUTUBE). BATIDAS = RITMO OFFLINE DO
+              APP. NÃO BAIXAMOS ÁUDIO DO YOUTUBE.
+            </small>
+          </div>
           <span className="native-value">
-            {WORKOUT_TRACKS.find((item) => item.id === draft.workoutMusicTrack)?.label} ›
+            {MUSIC_MODES.find((item) => item.id === draft.workoutMusicMode)?.label} ›
           </span>
         </button>
+
+        {draft.workoutMusicMode === 'youtube' ? (
+          <button
+            type="button"
+            className="native-row native-link native-row-stack"
+            onClick={() => {
+              const idx = YOUTUBE_TABATA_TRACKS.findIndex(
+                (item) => item.id === draft.youtubeTrackId,
+              )
+              const next = YOUTUBE_TABATA_TRACKS[(idx + 1) % YOUTUBE_TABATA_TRACKS.length]!
+              update({ youtubeTrackId: next.id })
+            }}
+          >
+            <div>
+              <span>FAIXA YOUTUBE</span>
+              <small>{getYoutubeTrack(draft.youtubeTrackId).blurb}</small>
+            </div>
+            <span className="native-value">{getYoutubeTrack(draft.youtubeTrackId).label} ›</span>
+          </button>
+        ) : null}
+
+        {draft.workoutMusicMode === 'youtube' ? (
+          <button
+            type="button"
+            className="native-row native-link"
+            onClick={() => openYoutubeExternally(getYoutubeTrack(draft.youtubeTrackId).videoId)}
+          >
+            <span>ABRIR NO YOUTUBE</span>
+            <span className="native-value">▶</span>
+          </button>
+        ) : null}
+
+        {draft.workoutMusicMode === 'beats' ? (
+          <button
+            type="button"
+            className="native-row native-link"
+            onClick={() => {
+              const options = WORKOUT_TRACKS.filter((item) => item.id !== 'off')
+              const idx = options.findIndex((item) => item.id === draft.workoutMusicTrack)
+              const next = options[(idx + 1) % options.length]!
+              update({ workoutMusicTrack: next.id })
+              window.setTimeout(() => {
+                unlockFeedback()
+                previewWorkoutTrack(next.id)
+              }, 60)
+            }}
+          >
+            <span>FAIXA OFFLINE</span>
+            <span className="native-value">
+              {WORKOUT_TRACKS.find((item) => item.id === draft.workoutMusicTrack)?.label} ›
+            </span>
+          </button>
+        ) : null}
 
         <label className="native-row">
           <span>SOM DE TIQUE-TAQUE</span>

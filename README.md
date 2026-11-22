@@ -33,8 +33,9 @@ Página de download: https://fused-matrix-pgypg72.shipstatic.com/baixar.html
 
 ## Música Tabata
 
-Batidas **próprias** do app (Web Audio): **Pulse 160**, **Drive 140**, **Storm 150**.  
-Fortes no exercício, suaves no descanso. Se Spotify/Deezer/YouTube estiver tocando e “Respeitar música” estiver ligado, a batida do app pausa e ficam só alertas de início/fim.
+- **YouTube** (padrão): ao iniciar o treino, o app abre um player com vídeos públicos de Tabata (ex.: compilação de músicas). Também dá para abrir no app YouTube. Não baixamos o áudio.
+- **Batidas offline**: ritmo próprio do app (Pulse / Drive / Storm) sem internet.
+- Com “Respeitar música”, se outra app estiver tocando, o timer fica só com alertas de início/fim.
 
 ## Entrega em todas as plataformas
 
