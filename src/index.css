@@ -482,6 +482,250 @@ button.phase-block:not(:disabled) {
   max-width: 28ch;
 }
 
+/* —— Cronómetro —— */
+.stopwatch-screen {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+}
+
+.stopwatch-subtitle {
+  font-size: 0.95rem !important;
+  letter-spacing: 0.08em;
+}
+
+.stopwatch-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 16px 8px;
+  min-height: 180px;
+  background: linear-gradient(180deg, #121212 0%, #000 100%);
+}
+
+.stopwatch-screen.is-live .stopwatch-stage {
+  background: linear-gradient(180deg, #1a2208 0%, #000 70%);
+}
+
+.stopwatch-time {
+  font-size: clamp(3.6rem, 16vw, 5.8rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--yellow);
+}
+
+.stopwatch-last-lap {
+  margin-top: 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #cfcfcf;
+}
+
+.stopwatch-last-lap.is-muted {
+  color: #777;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-align: center;
+  max-width: 28ch;
+}
+
+.stopwatch-controls {
+  padding-top: 10px;
+}
+
+.secondary-action-btn {
+  min-width: 72px;
+  padding: 14px 12px;
+  border-radius: 999px;
+  background: #1c1c1c;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  box-shadow: inset 0 0 0 1px #333;
+}
+
+.secondary-action-btn.is-disabled,
+.secondary-action-btn:disabled {
+  opacity: 0.35;
+}
+
+.reset-btn:disabled {
+  opacity: 0.35;
+}
+
+.lap-list {
+  min-height: 0;
+  overflow: auto;
+  padding: 4px 14px calc(12px + var(--safe-bottom));
+  border-top: 1px solid #151515;
+}
+
+.lap-empty {
+  padding: 18px 8px;
+  text-align: center;
+  color: #666;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.85rem;
+}
+
+.lap-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 4px;
+  border-bottom: 1px solid #1a1a1a;
+  font-variant-numeric: tabular-nums;
+}
+
+.lap-index {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #aaa;
+}
+
+.lap-split {
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.lap-total {
+  text-align: right;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--yellow);
+}
+
+.lap-row.is-best .lap-split {
+  color: var(--green);
+}
+
+.lap-row.is-worst .lap-split {
+  color: #ff7a7a;
+}
+
+/* —— Mais —— */
+.more-screen {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.more-header {
+  padding: 18px 16px 10px;
+  text-align: center;
+}
+
+.more-header h1 {
+  color: var(--yellow);
+  font-size: 1.7rem;
+  letter-spacing: 0.08em;
+}
+
+.more-header p {
+  margin-top: 4px;
+  color: #888;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.85rem;
+}
+
+.more-body {
+  flex: 1;
+  overflow: auto;
+  padding: 8px 14px calc(20px + var(--safe-bottom));
+}
+
+.more-card {
+  width: 100%;
+  text-align: left;
+  padding: 16px;
+  border-radius: 16px;
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  margin-bottom: 14px;
+}
+
+.more-card-title {
+  display: block;
+  color: var(--yellow);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.more-card-desc {
+  display: block;
+  margin-top: 6px;
+  color: #9a9a9a;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.more-section-label {
+  margin: 14px 4px 6px;
+  color: #666;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.more-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 12px;
+  border-bottom: 1px solid #1a1a1a;
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-decoration: none;
+}
+
+.more-chevron {
+  color: #666;
+  font-size: 1.2rem;
+}
+
+.more-note {
+  margin: 10px 4px 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: #121212;
+  color: #aaa;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.more-tips {
+  margin: 8px 4px 0;
+  padding-left: 18px;
+  color: #9a9a9a;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.more-tips li + li {
+  margin-top: 8px;
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;

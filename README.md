@@ -2,20 +2,22 @@
 
 Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
-## Por que no iPhone é web?
+## Modos
 
-A Apple **não deixa instalar APK** (isso é Android). App nativo na App Store precisa conta de desenvolvedor Apple + Mac/Xcode. Por isso no iPhone usamos o **Safari → Adicionar à Tela de Início** (funciona como app, sem App Store).
+| Aba | Função |
+|-----|--------|
+| **Tabata** | Preparar / exercício / descanso com foco na fase ativa |
+| **Rondas** | Timer de rounds (boxe/MMA) |
+| **Cronómetro** | Contagem crescente com voltas/intervalos |
+| **Mais** | Configurações, atalhos e instalação |
 
-## iPhone (Safari) — som
+## iPhone (Safari)
 
-### https://nova-frame-frv59rq.shipstatic.com
+Abra no Safari, desative o **mute lateral**, depois **Compartilhar → Adicionar à Tela de Início**.
 
-1. Abra no **Safari**.  
-2. **Desative o mute lateral** (switch acima dos botões de volume) e aumente o volume.  
-3. **Compartilhar** → **Adicionar à Tela de Início**.  
-4. Abra o ícone e toque em **INICIAR** (o toque libera o áudio do Safari).
+**https://viral-frame-8dazt45.shipstatic.com**
 
-> Com o mute ligado, o iPhone silencia sons da web — inclusive voz e beeps.
+> A Apple não deixa instalar APK. A Tela de Início é o caminho no iPhone.
 
 ## Android (APK)
 
@@ -30,4 +32,5 @@ npm run build:docs
 npm run android:apk
 npm run smoke
 node scripts/smoke-focus.mjs
+node scripts/smoke-stopwatch.mjs
 ```

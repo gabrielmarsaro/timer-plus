@@ -4,11 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { BottomNav } from './components/BottomNav'
 import { GeneralSettingsModal } from './components/GeneralSettingsModal'
 import { IosAudioTip } from './components/IosAudioTip'
-import { PlaceholderScreen } from './components/PlaceholderScreen'
+import { MoreScreen } from './components/MoreScreen'
 import { RoundsScreen } from './components/RoundsScreen'
+import { StopwatchScreen } from './components/StopwatchScreen'
 import { TabataScreen } from './components/TabataScreen'
 import { WorkoutEditModal } from './components/WorkoutEditModal'
 import { usePhaseTimer } from './hooks/usePhaseTimer'
+import { useStopwatch } from './hooks/useStopwatch'
 import { useWakeLock } from './hooks/useWakeLock'
 import {
   announceDone,
@@ -17,6 +19,7 @@ import {
   feedbackPhaseStart,
   isAppleTouchWeb,
   onCountdownSecond,
+  previewSound,
   unlockFeedback,
 } from './lib/feedback'
 import { buildPhases, buildRoundsPhases } from './lib/buildPhases'
@@ -131,9 +134,12 @@ export default function App() {
     },
   })
 
+  const stopwatch = useStopwatch()
+
   const activeRunning =
     (tab === 'tabata' && tabata.status === 'running') ||
-    (tab === 'rounds' && rounds.status === 'running')
+    (tab === 'rounds' && rounds.status === 'running') ||
+    (tab === 'stopwatch' && stopwatch.status === 'running')
 
   useWakeLock(activeRunning)
 
@@ -185,10 +191,18 @@ export default function App() {
     })
   }, [generalSettings.lightColors])
 
+  const maybeShowIosTip = () => {
+    if (!isAppleTouchWeb()) return
+    const seen = sessionStorage.getItem('timer-plus:ios-audio-tip')
+    if (!seen) {
+      sessionStorage.setItem('timer-plus:ios-audio-tip', '1')
+      window.setTimeout(() => setIosAudioTip(true), 500)
+    }
+  }
+
   const makeToggle =
     (timer: typeof tabata) =>
     () => {
-      // Never await audio unlock — that froze INICIAR on iPhone Safari.
       unlockFeedback()
 
       if (timer.status === 'running') {
@@ -199,16 +213,30 @@ export default function App() {
         void timer.resume()
         return
       }
-      if (isAppleTouchWeb()) {
-        const seen = sessionStorage.getItem('timer-plus:ios-audio-tip')
-        if (!seen) {
-          sessionStorage.setItem('timer-plus:ios-audio-tip', '1')
-          // Show tip after start so it never blocks the first paint/tick.
-          window.setTimeout(() => setIosAudioTip(true), 500)
-        }
-      }
+      maybeShowIosTip()
       void timer.start()
     }
+
+  const toggleStopwatch = () => {
+    unlockFeedback()
+    if (stopwatch.status === 'running') {
+      stopwatch.pause()
+      return
+    }
+    if (stopwatch.status === 'paused') {
+      stopwatch.resume()
+      return
+    }
+    maybeShowIosTip()
+    stopwatch.start()
+    previewSound()
+  }
+
+  const markLap = () => {
+    unlockFeedback()
+    stopwatch.lap()
+    previewSound()
+  }
 
   const timerLive =
     (tab === 'tabata' && tabata.status !== 'idle') ||
@@ -260,16 +288,23 @@ export default function App() {
         )}
 
         {tab === 'stopwatch' && (
-          <PlaceholderScreen
-            title="Cronómetro"
-            description="Cronómetro com intervalos chega na próxima versão."
+          <StopwatchScreen
+            status={stopwatch.status}
+            elapsedMs={stopwatch.elapsedMs}
+            laps={stopwatch.laps}
+            onOpenGeneralSettings={() => setGeneralOpen(true)}
+            onToggle={toggleStopwatch}
+            onLap={markLap}
+            onReset={stopwatch.reset}
           />
         )}
 
         {tab === 'more' && (
-          <PlaceholderScreen
-            title="Mais"
-            description="Histórico, templates e opções extras em breve."
+          <MoreScreen
+            onOpenGeneralSettings={() => setGeneralOpen(true)}
+            onGoTabata={() => setTab('tabata')}
+            onGoRounds={() => setTab('rounds')}
+            onGoStopwatch={() => setTab('stopwatch')}
           />
         )}
       </main>
