@@ -13,19 +13,23 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## iPhone (Safari)
 
-**https://unveiled-veil-szv99yf.shipstatic.com/**
+**https://ethereal-fog-yr5ty2d.shipstatic.com**
 
 1. Abra no **Safari**.  
 2. Desative o **mute lateral** e aumente o volume.  
 3. **Compartilhar** → **Adicionar à Tela de Início**.
 
-## Android (APK)
+## Android (APK) — versão **1.2.0**
 
 **https://github.com/gabrielmarsaro/timer-plus/raw/main/releases/timer-plus-debug.apk**
 
 1. Baixe no Chrome.  
 2. Permita **fontes desconhecidas** se pedir.  
-3. Instale / atualize (substitua a versão antiga).
+3. Instale / atualize.
+
+Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
+
+Página de download: https://ethereal-fog-yr5ty2d.shipstatic.com/baixar.html
 
 ## Entrega em todas as plataformas
 

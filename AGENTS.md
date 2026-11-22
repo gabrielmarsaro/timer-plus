@@ -6,7 +6,7 @@ Whenever you change the app, update **all** delivery surfaces in the same turn �
 
 1. **Code** — commit and push to `main` (or open/merge the feature PR).
 2. **Web / iPhone** — `npm run build:docs`, redeploy the static site (ShipStatic or the current host), and put the live URL in `README.md`.
-3. **Android APK** — rebuild debug APK, copy to `releases/timer-plus-debug.apk`, commit + push that binary so the public download link stays current:
+3. **Android APK** — bump `versionCode` + `versionName` in `android/app/build.gradle` (required so tablets accept the update), rebuild debug APK, copy to `releases/timer-plus-debug.apk`, update `public/baixar.html` version + `?v=` cache-bust, commit + push:
    - Link: `https://github.com/gabrielmarsaro/timer-plus/raw/main/releases/timer-plus-debug.apk`
 4. **Smoke** — run `npm run smoke`, `node scripts/smoke-focus.mjs`, and `node scripts/smoke-stopwatch.mjs` when those areas changed.
 

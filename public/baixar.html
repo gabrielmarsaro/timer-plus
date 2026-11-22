@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#000000" />
-    <title>Baixar Timer Plus (Android)</title>
+    <meta name="robots" content="noindex" />
+    <title>Baixar Timer Plus 1.2.0 (Android)</title>
     <style>
       :root {
         color-scheme: dark;
@@ -33,6 +34,17 @@
         font-size: 1.6rem;
         letter-spacing: 0.04em;
       }
+      .ver {
+        display: inline-block;
+        margin-bottom: 14px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: #222;
+        color: #b6ff3c;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+      }
       p {
         margin: 0 0 18px;
         color: #bdbdbd;
@@ -60,29 +72,41 @@
         line-height: 1.5;
         font-size: 0.9rem;
       }
-      code {
-        color: #b6ff3c;
-        font-size: 0.85em;
+      .warn {
+        margin-top: 16px;
+        padding: 12px;
+        border-radius: 12px;
+        background: #1a1a1a;
+        border: 1px solid #333;
+        color: #ddd;
+        font-size: 0.82rem;
+        line-height: 1.4;
+        text-align: left;
       }
     </style>
   </head>
   <body>
     <main class="card">
       <h1>TIMER PLUS</h1>
-      <p>Instale no Android sem Play Store. Toque no botão abaixo para baixar o APK.</p>
+      <div class="ver">VERSÃO 1.2.0 · CODE 3</div>
+      <p>Atualização para tablet/celular Android. Baixe de novo (não use o APK antigo do WhatsApp).</p>
       <a
         class="btn"
-        href="https://github.com/gabrielmarsaro/timer-plus/raw/main/releases/timer-plus-debug.apk"
-        download="timer-plus-debug.apk"
+        id="apk"
+        href="https://github.com/gabrielmarsaro/timer-plus/raw/main/releases/timer-plus-debug.apk?v=1.2.0"
+        download="timer-plus-1.2.0.apk"
       >
-        BAIXAR APK
+        BAIXAR APK 1.2.0
       </a>
       <ol>
-        <li>Toque em <strong>BAIXAR APK</strong>.</li>
-        <li>Abra o arquivo baixado.</li>
-        <li>Se pedir, permita <strong>fontes desconhecidas</strong> para o Chrome/Arquivos.</li>
-        <li>Toque em <strong>Instalar</strong>.</li>
+        <li>Toque em <strong>BAIXAR APK 1.2.0</strong>.</li>
+        <li>Abra o arquivo baixado (Downloads).</li>
+        <li>Permita <strong>fontes desconhecidas</strong> se pedir.</li>
+        <li>Toque em <strong>Atualizar</strong> ou <strong>Instalar</strong>.</li>
       </ol>
+      <div class="warn">
+        Se aparecer erro de assinatura / “conflito com o pacote existente”: desinstale o Timer Plus antigo, depois instale este APK 1.2.0.
+      </div>
     </main>
   </body>
 </html>
