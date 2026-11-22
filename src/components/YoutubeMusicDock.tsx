@@ -20,10 +20,10 @@ export function YoutubeMusicDock({ track, autoplayKey, onClose }: YoutubeMusicDo
         <div className="yt-dock-actions">
           <button
             type="button"
-            className="yt-dock-btn"
+            className="yt-dock-btn yt-dock-btn-primary"
             onClick={() => openYoutubeExternally(track.videoId)}
           >
-            APP
+            TOCAR
           </button>
           <button type="button" className="yt-dock-btn" onClick={onClose} aria-label="Fechar player">
             ✕

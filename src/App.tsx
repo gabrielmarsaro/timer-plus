@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core'
+// Capacitor used for native YouTube handoff
 import { StatusBar, Style } from '@capacitor/status-bar'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { BottomNav } from './components/BottomNav'
@@ -24,7 +25,7 @@ import {
   unlockFeedback,
 } from './lib/feedback'
 import { pauseWorkoutMusic, stopWorkoutMusic, syncWorkoutMusic } from './lib/workoutMusic'
-import { getYoutubeTrack } from './lib/youtubeTabata'
+import { getYoutubeTrack, openYoutubeExternally } from './lib/youtubeTabata'
 import { buildPhases, buildRoundsPhases } from './lib/buildPhases'
 import {
   DEFAULT_GENERAL_SETTINGS,
@@ -234,6 +235,11 @@ export default function App() {
     }
     setYoutubeDockOpen(true)
     setYoutubeAutoplayKey((key) => key + 1)
+    // Android APK: open the real YouTube app so the track always plays
+    // (in-app iframe can be blocked by YouTube bot checks).
+    if (Capacitor.isNativePlatform()) {
+      openYoutubeExternally(getYoutubeTrack(generalSettings.youtubeTrackId).videoId)
+    }
   }
 
   const makeToggle =

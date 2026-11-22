@@ -56,7 +56,8 @@ export function youtubeEmbedUrl(videoId: string, autoplay: boolean): string {
     modestbranding: '1',
     autoplay: autoplay ? '1' : '0',
   })
-  return `https://www.youtube.com/embed/${videoId}?${params.toString()}`
+  // nocookie reduces some embed friction; real devices still may need the APP button.
+  return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`
 }
 
 /** Abre o vídeo no app/site do YouTube (fora do timer). */

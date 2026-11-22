@@ -1310,6 +1310,13 @@ button.phase-block:not(:disabled) {
   letter-spacing: 0.04em;
 }
 
+.yt-dock-btn-primary {
+  background: #ff4d4d;
+  border-color: #ff4d4d;
+  color: #fff;
+  font-weight: 700;
+}
+
 .yt-dock-frame {
   position: relative;
   width: 100%;

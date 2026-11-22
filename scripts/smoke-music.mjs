@@ -52,7 +52,9 @@ const dock = page.locator('.yt-dock')
 await dock.waitFor({ state: 'visible', timeout: 3000 })
 const iframe = dock.locator('iframe')
 const src = await iframe.getAttribute('src')
-if (!src || !src.includes('youtube.com/embed/')) throw new Error(`Bad embed src: ${src}`)
+if (!src || !/youtube(?:-nocookie)?\.com\/embed\//.test(src)) {
+  throw new Error(`Bad embed src: ${src}`)
+}
 
 console.log(JSON.stringify({ track: track.trim(), embed: src, hasDock: true }))
 console.log('PASS')

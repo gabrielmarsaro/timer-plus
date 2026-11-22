@@ -13,7 +13,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## iPhone (Safari)
 
-**https://circular-hub-3bktsj5.shipstatic.com**
+**https://unstable-seed-8pbdp7z.shipstatic.com**
 
 1. Abra no **Safari**.  
 2. Desative o **mute lateral** e aumente o volume.  
@@ -29,7 +29,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
 
-Página de download: https://circular-hub-3bktsj5.shipstatic.com/baixar.html
+Página de download: https://unstable-seed-8pbdp7z.shipstatic.com/baixar.html
 
 ## Música Tabata
 
