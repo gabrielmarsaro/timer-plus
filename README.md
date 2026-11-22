@@ -13,7 +13,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## iPhone (Safari)
 
-**https://fused-matrix-pgypg72.shipstatic.com**
+**https://circular-hub-3bktsj5.shipstatic.com**
 
 1. Abra no **Safari**.  
 2. Desative o **mute lateral** e aumente o volume.  
@@ -21,7 +21,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## Android (APK) — versão **1.3.0**
 
-**https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/ec0d1d453d241fbe266bdaaa932ea081dfdb6715/releases/timer-plus-debug.apk**
+**https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/6f00ac178321a0a65e16f95a83844aeb9123cb00/releases/timer-plus-debug.apk**
 
 1. Baixe no Chrome.  
 2. Permita **fontes desconhecidas** se pedir.  
@@ -29,7 +29,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
 
-Página de download: https://fused-matrix-pgypg72.shipstatic.com/baixar.html
+Página de download: https://circular-hub-3bktsj5.shipstatic.com/baixar.html
 
 ## Música Tabata
 
