@@ -13,15 +13,23 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## iPhone (Safari)
 
-Abra no Safari, desative o **mute lateral**, depois **Compartilhar → Adicionar à Tela de Início**.
+**https://unveiled-veil-szv99yf.shipstatic.com/**
 
-**https://strong-petal-mz7ws4q.shipstatic.com**
-
-> A Apple não deixa instalar APK. A Tela de Início é o caminho no iPhone.
+1. Abra no **Safari**.  
+2. Desative o **mute lateral** e aumente o volume.  
+3. **Compartilhar** → **Adicionar à Tela de Início**.
 
 ## Android (APK)
 
 **https://github.com/gabrielmarsaro/timer-plus/raw/main/releases/timer-plus-debug.apk**
+
+1. Baixe no Chrome.  
+2. Permita **fontes desconhecidas** se pedir.  
+3. Instale / atualize (substitua a versão antiga).
+
+## Entrega em todas as plataformas
+
+Toda mudança do app deve atualizar **código + web/iPhone + APK** no mesmo ciclo. Ver `AGENTS.md`.
 
 ## Desenvolvimento
 
