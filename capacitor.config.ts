@@ -6,6 +6,15 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     androidScheme: 'https',
+    // Allow YouTube embed / open-in-app for Tabata music (no audio ripping).
+    allowNavigation: [
+      'youtube.com',
+      '*.youtube.com',
+      'youtu.be',
+      '*.youtu.be',
+      'youtube-nocookie.com',
+      '*.youtube-nocookie.com',
+    ],
   },
   android: {
     allowMixedContent: false,
