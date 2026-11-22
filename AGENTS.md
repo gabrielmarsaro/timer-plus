@@ -27,3 +27,4 @@ If the SDK is missing, install cmdline-tools + `platforms;android-36` + `build-t
 - iPhone = Safari / Add to Home Screen (no APK).
 - Keep pause/reset/nav usable during Tabata/Rondas focus mode.
 - Respect background music: hush ticks, keep start/end alerts when “Respeitar música” is on.
+- Workout music = original procedural Web Audio beats (Pulse/Drive/Storm). Do **not** ship copyrighted Tabata playlist tracks. When ducking detects Spotify/etc., pause app beats.

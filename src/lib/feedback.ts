@@ -1,6 +1,13 @@
 import { Capacitor } from '@capacitor/core'
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics'
 import type { GeneralSettings, Phase } from '../types'
+import {
+  bindWorkoutAudioContext,
+  configureWorkoutMusic,
+  isWorkoutMusicAudible,
+  setExternalMusicBlocked,
+  stopWorkoutMusic,
+} from './workoutMusic'
 
 type SoundKind = 'tick' | 'phase' | 'done' | 'warning' | 'preview'
 type SessionType = 'auto' | 'ambient' | 'transient' | 'playback'
@@ -33,6 +40,7 @@ export function isAppleTouchWeb(): boolean {
 
 export function configureFeedback(next: GeneralSettings): void {
   settings = next
+  configureWorkoutMusic(next)
 }
 
 function getCtx(): AudioContext | null {
@@ -41,6 +49,7 @@ function getCtx(): AudioContext | null {
     try {
       audioCtx = new AudioCtxCtor()
       bindMediaWatch(audioCtx)
+      bindWorkoutAudioContext(audioCtx)
     } catch {
       return null
     }
@@ -55,11 +64,13 @@ function bindMediaWatch(ctx: AudioContext): void {
     const state = ctx.state as string
     if (state === 'interrupted') {
       externalMusic = true
+      setExternalMusicBlocked(Boolean(settings?.ducking))
       return
     }
     if (state === 'running' && document.visibilityState === 'visible') {
       // Other music often keeps us interrupted/suspended; running again → clear.
       externalMusic = false
+      setExternalMusicBlocked(false)
     }
   })
 }
@@ -150,6 +161,7 @@ export function refreshExternalMusicState(): boolean {
   const state = ctx.state as string
   if (state === 'interrupted') {
     externalMusic = true
+    setExternalMusicBlocked(Boolean(settings?.ducking))
     return true
   }
 
@@ -158,14 +170,18 @@ export function refreshExternalMusicState(): boolean {
       const next = ctx.state as string
       if (next === 'suspended' || next === 'interrupted') {
         externalMusic = true
+        setExternalMusicBlocked(Boolean(settings?.ducking))
       } else if (next === 'running') {
         externalMusic = false
+        setExternalMusicBlocked(false)
       }
     }).catch(() => {
       externalMusic = true
+      setExternalMusicBlocked(Boolean(settings?.ducking))
     })
   }
 
+  setExternalMusicBlocked(externalMusic && Boolean(settings?.ducking))
   return externalMusic
 }
 
@@ -314,6 +330,8 @@ function playSound(kind: SoundKind): void {
 
   // With background music: keep only start/end (and warning) alerts — no ticks.
   if (kind === 'tick' && shouldSilenceAmbient()) return
+  // Our Tabata beat already fills the work phase — skip competing ticks.
+  if (kind === 'tick' && isWorkoutMusicAudible()) return
 
   const vol = volume()
   const soundType = settings.soundType
@@ -498,6 +516,7 @@ export function announcePhase(phase: Phase | null, next?: Phase | null): void {
 
 export function announceDone(): void {
   ensureAudioReady()
+  stopWorkoutMusic()
   void vibrate('done')
   playSound('done')
   speak('Treino concluído')

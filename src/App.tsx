@@ -22,6 +22,7 @@ import {
   previewSound,
   unlockFeedback,
 } from './lib/feedback'
+import { pauseWorkoutMusic, stopWorkoutMusic, syncWorkoutMusic } from './lib/workoutMusic'
 import { buildPhases, buildRoundsPhases } from './lib/buildPhases'
 import {
   DEFAULT_GENERAL_SETTINGS,
@@ -161,6 +162,28 @@ export default function App() {
   }, [generalSettings])
 
   useEffect(() => {
+    const timer = tab === 'rounds' ? rounds : tabata
+    const phase = tab === 'stopwatch' || tab === 'more' ? null : timer.currentPhase
+    const running =
+      tab === 'tabata'
+        ? tabata.status === 'running'
+        : tab === 'rounds'
+          ? rounds.status === 'running'
+          : false
+    syncWorkoutMusic(phase, running)
+    if (!running && (tab === 'tabata' || tab === 'rounds')) {
+      if (timer.status === 'paused') pauseWorkoutMusic()
+      if (timer.status === 'idle') stopWorkoutMusic()
+    }
+  }, [
+    tab,
+    tabata.status,
+    tabata.currentPhase,
+    rounds.status,
+    rounds.currentPhase,
+  ])
+
+  useEffect(() => {
     const warmVoices = () => {
       try {
         window.speechSynthesis?.getVoices()
@@ -206,6 +229,7 @@ export default function App() {
       unlockFeedback()
 
       if (timer.status === 'running') {
+        pauseWorkoutMusic()
         timer.pause()
         return
       }

@@ -21,6 +21,8 @@ export interface RoundsSettings {
   warning: number
 }
 
+export type WorkoutMusicTrack = 'off' | 'pulse' | 'drive' | 'storm'
+
 export interface GeneralSettings {
   soundEffect: boolean
   soundType: 'censor' | 'beep' | 'bell'
@@ -28,6 +30,9 @@ export interface GeneralSettings {
   voiceAssistant: boolean
   voice: 'luciana' | 'sistema'
   ducking: boolean
+  /** Batidas próprias estilo Tabata (Web Audio — sem faixas com copyright). */
+  workoutMusic: boolean
+  workoutMusicTrack: WorkoutMusicTrack
   ticking: boolean
   vibration: boolean
   flashlight: boolean
@@ -71,6 +76,8 @@ export const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   voiceAssistant: true,
   voice: 'luciana',
   ducking: true,
+  workoutMusic: true,
+  workoutMusicTrack: 'pulse',
   ticking: true,
   vibration: true,
   flashlight: false,
