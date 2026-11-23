@@ -1,5 +1,4 @@
 import { Capacitor } from '@capacitor/core'
-// Capacitor used for native YouTube handoff
 import { StatusBar, Style } from '@capacitor/status-bar'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { BottomNav } from './components/BottomNav'
@@ -10,7 +9,6 @@ import { RoundsScreen } from './components/RoundsScreen'
 import { StopwatchScreen } from './components/StopwatchScreen'
 import { TabataScreen } from './components/TabataScreen'
 import { WorkoutEditModal } from './components/WorkoutEditModal'
-import { YoutubeMusicDock } from './components/YoutubeMusicDock'
 import { usePhaseTimer } from './hooks/usePhaseTimer'
 import { useStopwatch } from './hooks/useStopwatch'
 import { useWakeLock } from './hooks/useWakeLock'
@@ -83,8 +81,6 @@ export default function App() {
   const [workoutEditOpen, setWorkoutEditOpen] = useState(false)
   const [screenFlash, setScreenFlash] = useState(false)
   const [iosAudioTip, setIosAudioTip] = useState(false)
-  const [youtubeDockOpen, setYoutubeDockOpen] = useState(false)
-  const [youtubeAutoplayKey, setYoutubeAutoplayKey] = useState(0)
 
   const flashScreen = useCallback(() => {
     if (!generalSettings.screenFlash) return
@@ -228,20 +224,6 @@ export default function App() {
     }
   }
 
-  const armYoutubeDock = () => {
-    if (generalSettings.workoutMusicMode !== 'youtube') {
-      setYoutubeDockOpen(false)
-      return
-    }
-    setYoutubeDockOpen(true)
-    setYoutubeAutoplayKey((key) => key + 1)
-    // Android APK: open the real YouTube app so the track always plays
-    // (in-app iframe can be blocked by YouTube bot checks).
-    if (Capacitor.isNativePlatform()) {
-      openYoutubeExternally(getYoutubeTrack(generalSettings.youtubeTrackId).videoId)
-    }
-  }
-
   const makeToggle =
     (timer: typeof tabata) =>
     () => {
@@ -253,14 +235,17 @@ export default function App() {
         return
       }
       if (timer.status === 'paused') {
-        armYoutubeDock()
         void timer.resume()
         return
       }
       maybeShowIosTip()
-      armYoutubeDock()
       void timer.start()
     }
+
+  const openTabataYoutube = () => {
+    unlockFeedback()
+    openYoutubeExternally(getYoutubeTrack(generalSettings.youtubeTrackId).videoId)
+  }
 
   const toggleStopwatch = () => {
     unlockFeedback()
@@ -287,18 +272,16 @@ export default function App() {
     (tab === 'tabata' && tabata.status !== 'idle') ||
     (tab === 'rounds' && rounds.status !== 'idle')
 
-  const youtubeTrack = getYoutubeTrack(generalSettings.youtubeTrackId)
-  const showYoutubeDock =
-    youtubeDockOpen &&
-    generalSettings.workoutMusicMode === 'youtube' &&
-    (tab === 'tabata' || tab === 'rounds') &&
-    (tab === 'tabata' ? tabata.status !== 'idle' : rounds.status !== 'idle')
+  const tabataYoutube =
+    generalSettings.workoutMusicMode === 'youtube'
+      ? getYoutubeTrack(generalSettings.youtubeTrackId)
+      : null
 
   return (
     <div
       className={`app-shell${screenFlash ? ' is-flashing' : ''}${
         generalSettings.lightColors ? ' theme-light' : ''
-      }${timerLive ? ' is-timer-live' : ''}${showYoutubeDock ? ' has-yt-dock' : ''}`}
+      }${timerLive ? ' is-timer-live' : ''}`}
     >
       <main className="app-main">
         {tab === 'tabata' && (
@@ -314,6 +297,8 @@ export default function App() {
             cyclesLeft={tabata.cyclesLeft}
             idleWorkDuration={tabataSettings.work}
             timeFormat={generalSettings.timeFormat}
+            musicTrackLabel={tabataYoutube?.label ?? null}
+            onOpenMusic={tabataYoutube ? openTabataYoutube : undefined}
             onOpenGeneralSettings={() => setGeneralOpen(true)}
             onOpenWorkoutEdit={() => setWorkoutEditOpen(true)}
             onToggle={makeToggle(tabata)}
@@ -360,14 +345,6 @@ export default function App() {
           />
         )}
       </main>
-
-      {showYoutubeDock ? (
-        <YoutubeMusicDock
-          track={youtubeTrack}
-          autoplayKey={youtubeAutoplayKey}
-          onClose={() => setYoutubeDockOpen(false)}
-        />
-      ) : null}
 
       <BottomNav active={tab} onChange={setTab} />
 

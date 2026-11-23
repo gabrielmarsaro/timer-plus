@@ -13,7 +13,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## iPhone (Safari)
 
-**https://unstable-seed-8pbdp7z.shipstatic.com**
+**https://woven-photon-45c57ty.shipstatic.com**
 
 1. Abra no **Safari**.  
 2. Desative o **mute lateral** e aumente o volume.  
@@ -29,13 +29,14 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
 
-Página de download: https://unstable-seed-8pbdp7z.shipstatic.com/baixar.html
+Página de download: https://woven-photon-45c57ty.shipstatic.com/baixar.html
 
 ## Música Tabata
 
-- **YouTube** (padrão): ao iniciar o treino, o app abre um player com vídeos públicos de Tabata (ex.: compilação de músicas). Também dá para abrir no app YouTube. Não baixamos o áudio.
-- **Batidas offline**: ritmo próprio do app (Pulse / Drive / Storm) sem internet.
-- Com “Respeitar música”, se outra app estiver tocando, o timer fica só com alertas de início/fim.
+- Só na aba **Tabata** (não em Rondas/Cronómetro).
+- **YouTube** (padrão): botão **MÚSICA NO YOUTUBE** abre a faixa pública no YouTube — sem vídeo embutido no timer.
+- **Batidas offline**: ritmo próprio do app (Pulse / Drive / Storm).
+- “Respeitar música” silencia o tique-taque se Spotify/YouTube já estiver tocando.
 
 ## Entrega em todas as plataformas
 

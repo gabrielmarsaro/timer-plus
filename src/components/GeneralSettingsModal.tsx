@@ -179,8 +179,8 @@ export function GeneralSettingsModal({
           <div>
             <span>MÚSICA TABATA</span>
             <small>
-              YOUTUBE = VÍDEOS PÚBLICOS (PLAYER NO APP OU APP YOUTUBE). BATIDAS = RITMO OFFLINE DO
-              APP. NÃO BAIXAMOS ÁUDIO DO YOUTUBE.
+              SÓ NA ABA TABATA. YOUTUBE ABRE A FAIXA NO APP/SITE DO YOUTUBE (SEM VÍDEO NO TIMER).
+              BATIDAS = RITMO OFFLINE DO APP.
             </small>
           </div>
           <span className="native-value">

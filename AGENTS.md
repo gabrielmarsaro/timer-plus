@@ -27,4 +27,4 @@ If the SDK is missing, install cmdline-tools + `platforms;android-36` + `build-t
 - iPhone = Safari / Add to Home Screen (no APK).
 - Keep pause/reset/nav usable during Tabata/Rondas focus mode.
 - Respect background music: hush ticks, keep start/end alerts when “Respeitar música” is on.
-- Tabata music: prefer **YouTube public videos** via in-app embed / open-in-YouTube (curated links only). Offline fallback = procedural Web Audio beats. Never rip/download YouTube audio into the APK.
+- Tabata music (Tabata tab only): open curated public YouTube links externally — no in-app video embed. Offline fallback = procedural Web Audio beats. Never rip/download YouTube audio.

@@ -30,33 +30,30 @@ const browser = await chromium.launch({ headless: true })
 const page = await browser.newPage({ viewport: { width: 390, height: 844 } })
 await page.goto('http://127.0.0.1:5179/', { waitUntil: 'networkidle' })
 
+// Tabata-only music link on home
+const music = page.locator('.tabata-music-link')
+await music.waitFor({ state: 'visible', timeout: 3000 })
+const musicText = await music.innerText()
+if (!musicText.includes('MÚSICA NO YOUTUBE')) throw new Error('Missing Tabata music link')
+if (!musicText.includes('TABATA')) throw new Error('Expected curated track label')
+
+// No in-app YouTube dock
+if ((await page.locator('.yt-dock').count()) !== 0) throw new Error('yt-dock should be gone')
+
 await page.getByRole('button', { name: 'Configurações', exact: true }).click()
 await page.getByRole('heading', { name: 'CONFIGURAÇÕES' }).waitFor()
-
 const body = await page.locator('.native-sheet-body').innerText()
-if (!body.includes('MÚSICA TABATA')) throw new Error('Missing MÚSICA TABATA setting')
-if (!body.includes('YOUTUBE')) throw new Error('Expected YOUTUBE music mode')
-if (!body.includes('FAIXA YOUTUBE')) throw new Error('Missing FAIXA YOUTUBE')
-if (!body.includes('ABRIR NO YOUTUBE')) throw new Error('Missing ABRIR NO YOUTUBE')
-if (!body.includes('VERSÃO: 1.3.0')) throw new Error('Expected VERSÃO 1.3.0')
-
-await page.getByText('FAIXA YOUTUBE', { exact: true }).click()
-await page.waitForTimeout(80)
-const track = await page.locator('.native-value').filter({ hasText: /TABATA|HIP-HOP/ }).first().textContent()
-if (!track) throw new Error('YouTube track value missing after cycle')
-
+if (!body.includes('SÓ NA ABA TABATA')) throw new Error('Settings should say Tabata-only')
 await page.getByRole('button', { name: 'CONCLUÍDO' }).click()
-await page.getByRole('button', { name: 'INICIAR', exact: true }).click()
-await page.waitForTimeout(400)
-const dock = page.locator('.yt-dock')
-await dock.waitFor({ state: 'visible', timeout: 3000 })
-const iframe = dock.locator('iframe')
-const src = await iframe.getAttribute('src')
-if (!src || !/youtube(?:-nocookie)?\.com\/embed\//.test(src)) {
-  throw new Error(`Bad embed src: ${src}`)
+
+// Rondas must not show the music link
+await page.getByRole('button', { name: 'RONDAS', exact: true }).click()
+await page.waitForTimeout(200)
+if ((await page.locator('.tabata-music-link').count()) !== 0) {
+  throw new Error('Music link must not appear on Rondas')
 }
 
-console.log(JSON.stringify({ track: track.trim(), embed: src, hasDock: true }))
+console.log(JSON.stringify({ tabataMusic: musicText.replace(/\s+/g, ' ').trim(), rondasClean: true }))
 console.log('PASS')
 await browser.close()
 server.close()

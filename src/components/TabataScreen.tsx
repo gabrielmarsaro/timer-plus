@@ -20,6 +20,9 @@ interface TabataScreenProps {
   cyclesLeft: number
   idleWorkDuration: number
   timeFormat: TimeFormat
+  /** Faixa YouTube (só Tabata) — abre fora do app, sem vídeo embutido. */
+  musicTrackLabel?: string | null
+  onOpenMusic?: () => void
   onOpenGeneralSettings: () => void
   onOpenWorkoutEdit: () => void
   onToggle: () => void
@@ -36,6 +39,8 @@ export function TabataScreen({
   cyclesLeft,
   idleWorkDuration,
   timeFormat,
+  musicTrackLabel,
+  onOpenMusic,
   onOpenGeneralSettings,
   onOpenWorkoutEdit,
   onToggle,
@@ -125,6 +130,18 @@ export function TabataScreen({
       </header>
 
       <PhaseHero focus={focus} primary={primary} secondary={secondary} />
+
+      {musicTrackLabel && onOpenMusic && !focus ? (
+        <button
+          type="button"
+          className="tabata-music-link"
+          onClick={onOpenMusic}
+          aria-label={`Abrir música no YouTube: ${musicTrackLabel}`}
+        >
+          <span className="tabata-music-kicker">MÚSICA NO YOUTUBE</span>
+          <span className="tabata-music-name">{musicTrackLabel}</span>
+        </button>
+      ) : null}
 
       <div className={`controls-row${focus ? ' is-live' : ''}`}>
         <div className="stat-block">
