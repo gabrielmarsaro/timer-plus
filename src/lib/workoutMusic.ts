@@ -42,6 +42,8 @@ let step = 0
 let externalBlocked = false
 let currentKind: PhaseKind | null = null
 let lastCountdown = -1
+/** Tabata a correr com música ligada (inclui PREPARAR em silêncio). */
+let sessionArmed = false
 
 const LOOKAHEAD_MS = 25
 const SCHEDULE_AHEAD = 0.12
@@ -86,11 +88,12 @@ function setMasterGain(level: number, when = 0): void {
 }
 
 function feelForPhase(kind: PhaseKind | undefined): MusicFeel {
-  if (!kind) return 'off'
+  if (!kind || kind === 'done') return 'off'
+  // Preparar = silêncio (só 3-2-1 no fim). A batida começa no ESFORÇO.
+  if (kind === 'prepare') return 'off'
   if (kind === 'work') return 'work'
   if (kind === 'rest') return 'rest'
   if (kind === 'cycleRest') return 'recover'
-  if (kind === 'prepare') return 'prepare'
   if (kind === 'cooldown') return 'cooldown'
   return 'off'
 }
@@ -345,6 +348,7 @@ export function stopWorkoutMusic(): void {
   feel = 'off'
   currentKind = null
   lastCountdown = -1
+  sessionArmed = false
   setMasterGain(0)
 }
 
@@ -376,16 +380,43 @@ export function syncWorkoutMusic(
     return
   }
 
+  sessionArmed = true
   track = settings.workoutMusicTrack
-  const nextFeel = feelForPhase(phase?.kind)
-  feel = nextFeel
-
-  if (nextFeel === 'off' || !phase) {
+  if (!phase) {
     stopWorkoutMusic()
     return
   }
 
-  if (phase.kind !== currentKind) {
+  const nextFeel = feelForPhase(phase.kind)
+  const whole = Math.ceil(remainingSec)
+  const phaseChanged = phase.kind !== currentKind
+
+  // Preparar: sem batida; só 3-2-1 no fim para avisar o GO.
+  if (phase.kind === 'prepare') {
+    if (running || feel !== 'off') {
+      stopScheduler()
+      setMasterGain(0)
+    }
+    feel = 'off'
+    if (phaseChanged) {
+      currentKind = 'prepare'
+      lastCountdown = -1
+    }
+    if (whole >= 1 && whole <= 3 && whole !== lastCountdown) {
+      lastCountdown = whole
+      playCountdownBeep(whole)
+    }
+    if (whole > 3) lastCountdown = -1
+    return
+  }
+
+  feel = nextFeel
+  if (nextFeel === 'off') {
+    stopWorkoutMusic()
+    return
+  }
+
+  if (phaseChanged) {
     currentKind = phase.kind
     step = 0
     lastCountdown = -1
@@ -394,8 +425,7 @@ export function syncWorkoutMusic(
     playPhaseCue(phase.kind)
   }
 
-  const whole = Math.ceil(remainingSec)
-  // Countdown musical nos últimos 3s de cada intervalo (exceto prepare curto já coberto)
+  // Countdown musical nos últimos 3s de esforço/pausa/ciclo/cooldown
   if (whole >= 1 && whole <= 3 && whole !== lastCountdown) {
     lastCountdown = whole
     playCountdownBeep(whole)
@@ -429,4 +459,9 @@ export function previewWorkoutTrack(nextTrack: WorkoutTrack): void {
 
 export function isWorkoutMusicAudible(): boolean {
   return Boolean(settings?.workoutMusic && running && feel !== 'off' && !externalBlocked)
+}
+
+/** Sessão Tabata com música (mesmo no PREPARAR em silêncio) — manda o tempo, sem tic-tac. */
+export function isWorkoutMusicSessionActive(): boolean {
+  return Boolean(settings?.workoutMusic && sessionArmed && !externalBlocked)
 }

@@ -29,7 +29,6 @@ import {
   DEFAULT_ROUNDS_SETTINGS,
   DEFAULT_SETTINGS,
   type GeneralSettings,
-  type Phase,
   type RoundsSettings,
   type Tab,
   type TabataSettings,
@@ -120,41 +119,31 @@ export default function App() {
     window.setTimeout(() => setScreenFlash(false), 160)
   }, [generalSettings.screenFlash])
 
-  const handlePhaseEvent = useCallback(
-    (phase: Phase, next: Phase | null) => {
-      flashScreen()
-      // Sobe a trilha antes dos alertas para o tempo da música mandar (sem tic-tac/bip duplicado).
-      if (tab === 'tabata' && generalSettings.workoutMusic) {
-        syncWorkoutMusic(phase, true, phase.duration)
-      }
-      feedbackPhaseStart(phase, next)
-    },
-    [flashScreen, generalSettings.workoutMusic, tab],
-  )
-
-  const handleSecond = useCallback(
-    (remaining: number, phase: Phase) => {
-      // Tabata clássico: aviso no meio do esforço; rondas: aviso configurável.
-      const warning =
-        tab === 'rounds'
-          ? roundsSettings.warning
-          : phase.kind === 'work'
-            ? Math.max(3, Math.floor(phase.duration / 2))
-            : 0
-      onCountdownSecond(remaining, phase, warning)
-    },
-    [roundsSettings.warning, tab],
-  )
-
   const tabataPhases = useMemo(() => buildPhases(tabataSettings), [tabataSettings])
   const roundsPhases = useMemo(() => buildRoundsPhases(roundsSettings), [roundsSettings])
 
   const tabata = usePhaseTimer(tabataPhases, {
     totalRounds: tabataSettings.rounds,
     totalCycles: tabataSettings.cycles,
-    onStart: handlePhaseEvent,
-    onPhaseChange: handlePhaseEvent,
-    onSecond: handleSecond,
+    onStart: (phase, next) => {
+      flashScreen()
+      if (generalSettings.workoutMusic) {
+        syncWorkoutMusic(phase, true, phase.duration)
+      }
+      feedbackPhaseStart(phase, next)
+    },
+    onPhaseChange: (phase, next) => {
+      flashScreen()
+      if (generalSettings.workoutMusic) {
+        syncWorkoutMusic(phase, true, phase.duration)
+      }
+      feedbackPhaseStart(phase, next)
+    },
+    onSecond: (remaining, phase) => {
+      const warning =
+        phase.kind === 'work' ? Math.max(3, Math.floor(phase.duration / 2)) : 0
+      onCountdownSecond(remaining, phase, warning)
+    },
     onComplete: () => {
       flashScreen()
       announceDone()
@@ -164,9 +153,18 @@ export default function App() {
   const rounds = usePhaseTimer(roundsPhases, {
     totalRounds: roundsSettings.rounds,
     totalCycles: 1,
-    onStart: handlePhaseEvent,
-    onPhaseChange: handlePhaseEvent,
-    onSecond: handleSecond,
+    onStart: (phase, next) => {
+      flashScreen()
+      stopWorkoutMusic()
+      feedbackPhaseStart(phase, next)
+    },
+    onPhaseChange: (phase, next) => {
+      flashScreen()
+      feedbackPhaseStart(phase, next)
+    },
+    onSecond: (remaining, phase) => {
+      onCountdownSecond(remaining, phase, roundsSettings.warning)
+    },
     onComplete: () => {
       flashScreen()
       announceDone()
@@ -251,8 +249,40 @@ export default function App() {
     }
   }
 
+  /** Só um cronómetro ativo: ao iniciar um, zera os outros. */
+  const stopOtherActivities = useCallback(
+    (keep: 'tabata' | 'rounds' | 'stopwatch') => {
+      if (keep !== 'tabata' && tabata.status !== 'idle') {
+        tabata.reset()
+        stopWorkoutMusic()
+      }
+      if (keep !== 'rounds' && rounds.status !== 'idle') {
+        rounds.reset()
+      }
+      if (keep !== 'stopwatch' && stopwatch.status !== 'idle') {
+        stopwatch.reset()
+      }
+    },
+    [rounds, stopwatch, tabata],
+  )
+
+  const selectTab = useCallback(
+    (next: Tab) => {
+      if (next !== tab) {
+        if (next !== 'tabata' && tabata.status !== 'idle') {
+          tabata.reset()
+          stopWorkoutMusic()
+        }
+        if (next !== 'rounds' && rounds.status !== 'idle') rounds.reset()
+        if (next !== 'stopwatch' && stopwatch.status !== 'idle') stopwatch.reset()
+      }
+      setTab(next)
+    },
+    [rounds, stopwatch, tab, tabata],
+  )
+
   const makeToggle =
-    (timer: typeof tabata) =>
+    (timer: typeof tabata, kind: 'tabata' | 'rounds') =>
     () => {
       unlockFeedback()
 
@@ -265,6 +295,7 @@ export default function App() {
         void timer.resume()
         return
       }
+      stopOtherActivities(kind)
       maybeShowIosTip()
       void timer.start()
     }
@@ -279,6 +310,8 @@ export default function App() {
       stopwatch.resume()
       return
     }
+    stopOtherActivities('stopwatch')
+    stopWorkoutMusic()
     maybeShowIosTip()
     stopwatch.start()
     previewSound()
@@ -316,7 +349,7 @@ export default function App() {
             timeFormat={generalSettings.timeFormat}
             onOpenGeneralSettings={() => setGeneralOpen(true)}
             onOpenWorkoutEdit={() => setWorkoutEditOpen(true)}
-            onToggle={makeToggle(tabata)}
+            onToggle={makeToggle(tabata, 'tabata')}
             onReset={tabata.reset}
           />
         )}
@@ -334,7 +367,7 @@ export default function App() {
             timeFormat={generalSettings.timeFormat}
             onOpenGeneralSettings={() => setGeneralOpen(true)}
             onOpenWorkoutEdit={() => setWorkoutEditOpen(true)}
-            onToggle={makeToggle(rounds)}
+            onToggle={makeToggle(rounds, 'rounds')}
             onReset={rounds.reset}
           />
         )}
@@ -354,14 +387,14 @@ export default function App() {
         {tab === 'more' && (
           <MoreScreen
             onOpenGeneralSettings={() => setGeneralOpen(true)}
-            onGoTabata={() => setTab('tabata')}
-            onGoRounds={() => setTab('rounds')}
-            onGoStopwatch={() => setTab('stopwatch')}
+            onGoTabata={() => selectTab('tabata')}
+            onGoRounds={() => selectTab('rounds')}
+            onGoStopwatch={() => selectTab('stopwatch')}
           />
         )}
       </main>
 
-      <BottomNav active={tab} onChange={setTab} />
+      <BottomNav active={tab} onChange={selectTab} />
 
       <IosAudioTip open={iosAudioTip} onClose={() => setIosAudioTip(false)} />
 

@@ -5,6 +5,7 @@ import {
   bindWorkoutAudioContext,
   configureWorkoutMusic,
   isWorkoutMusicAudible,
+  isWorkoutMusicSessionActive,
   setExternalMusicBlocked,
   stopWorkoutMusic,
 } from './workoutMusic'
@@ -328,8 +329,8 @@ function playSound(kind: SoundKind): void {
   if (kind === 'tick' && !settings.ticking) return
   if (kind !== 'tick' && !settings.soundEffect && kind !== 'preview') return
 
-  // Spotify/etc. ou nossa música Tabata: sem tic-tac (a trilha já marca o tempo).
-  if (kind === 'tick' && (shouldSilenceAmbient() || isWorkoutMusicAudible())) return
+  // Spotify/etc. ou sessão Tabata com música: sem tic-tac (a trilha marca o tempo).
+  if (kind === 'tick' && (shouldSilenceAmbient() || isWorkoutMusicSessionActive())) return
 
   const vol = volume()
   const soundType = settings.soundType
@@ -496,7 +497,7 @@ export function announcePhase(phase: Phase | null, next?: Phase | null): void {
   ensureAudioReady()
   void vibrate('phase')
 
-  const musicOwnsTempo = isWorkoutMusicAudible()
+  const musicOwnsTempo = isWorkoutMusicSessionActive() || isWorkoutMusicAudible()
   // Com a música Tabata, GO/REST já vêm na trilha — não empilha bip de fase.
   if (!musicOwnsTempo) playSound('phase')
 
@@ -530,9 +531,8 @@ export function onCountdownSecond(remaining: number, phase: Phase | null, warnin
   const whole = Math.ceil(remaining)
   ensureAudioReady()
 
-  // Um tempo de cada vez: Spotify OU nossa música Tabata → sem tic-tac / countdown falado
-  // (a trilha já faz o metrônomo e o 3-2-1).
-  const musicTempo = shouldSilenceAmbient() || isWorkoutMusicAudible()
+  // Um tempo de cada vez: Spotify OU sessão Tabata com música → sem tic-tac / countdown falado.
+  const musicTempo = shouldSilenceAmbient() || isWorkoutMusicSessionActive()
 
   if (settings?.ticking && whole > 0 && !musicTempo) {
     playSound('tick')

@@ -156,8 +156,8 @@ export function GeneralSettingsModal({
           <div>
             <span>NOSSA MÚSICA TABATA</span>
             <small>
-              SÓ NO TABATA. MUDA EM PREPARAR / ESFORÇO / PAUSA / ENTRE CICLOS / COOLDOWN — COM CUES
-              GO, REST E 3-2-1.
+              SÓ NO TABATA. SILÊNCIO NO PREPARAR; BATIDA NO ESFORÇO/PAUSA/CICLO/COOLDOWN. CUES GO,
+              REST E 3-2-1 — SEM TIC-TAC EM CIMA.
             </small>
           </div>
           <button

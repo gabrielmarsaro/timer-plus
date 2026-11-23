@@ -13,7 +13,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## iPhone (Safari)
 
-**https://obscured-echo-8xf9jbs.shipstatic.com**
+**https://electric-beam-te8646e.shipstatic.com**
 
 1. Abra no **Safari**.  
 2. Desative o **mute lateral** e aumente o volume.  
@@ -29,7 +29,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
 
-Página de download: https://obscured-echo-8xf9jbs.shipstatic.com/baixar.html
+Página de download: https://electric-beam-te8646e.shipstatic.com/baixar.html
 
 ## Tabata (protocolo)
 
