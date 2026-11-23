@@ -4,7 +4,6 @@ import type { GeneralSettings, Phase } from '../types'
 import {
   bindWorkoutAudioContext,
   configureWorkoutMusic,
-  isWorkoutMusicAudible,
   setExternalMusicBlocked,
   stopWorkoutMusic,
 } from './workoutMusic'
@@ -328,10 +327,9 @@ function playSound(kind: SoundKind): void {
   if (kind === 'tick' && !settings.ticking) return
   if (kind !== 'tick' && !settings.soundEffect && kind !== 'preview') return
 
-  // With background music: keep only start/end (and warning) alerts — no ticks.
+  // Spotify/etc. (Respeitar música): keep only start/end alerts — no ticks.
+  // Nossa batida Tabata NÃO silencia o tic-tac.
   if (kind === 'tick' && shouldSilenceAmbient()) return
-  // Our Tabata beat already fills the work phase — skip competing ticks.
-  if (kind === 'tick' && isWorkoutMusicAudible()) return
 
   const vol = volume()
   const soundType = settings.soundType
