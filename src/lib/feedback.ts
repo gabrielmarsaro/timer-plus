@@ -4,6 +4,7 @@ import type { GeneralSettings, Phase } from '../types'
 import {
   bindWorkoutAudioContext,
   configureWorkoutMusic,
+  isWorkoutMusicAudible,
   setExternalMusicBlocked,
   stopWorkoutMusic,
 } from './workoutMusic'
@@ -327,9 +328,8 @@ function playSound(kind: SoundKind): void {
   if (kind === 'tick' && !settings.ticking) return
   if (kind !== 'tick' && !settings.soundEffect && kind !== 'preview') return
 
-  // Spotify/etc. (Respeitar música): keep only start/end alerts — no ticks.
-  // Nossa batida Tabata NÃO silencia o tic-tac.
-  if (kind === 'tick' && shouldSilenceAmbient()) return
+  // Spotify/etc. ou nossa música Tabata: sem tic-tac (a trilha já marca o tempo).
+  if (kind === 'tick' && (shouldSilenceAmbient() || isWorkoutMusicAudible())) return
 
   const vol = volume()
   const soundType = settings.soundType
@@ -495,9 +495,12 @@ export function announcePhase(phase: Phase | null, next?: Phase | null): void {
   if (!phase) return
   ensureAudioReady()
   void vibrate('phase')
-  playSound('phase')
 
-  // Voice for phase start/end alerts always (even with music) — user asked for start/end alerts.
+  const musicOwnsTempo = isWorkoutMusicAudible()
+  // Com a música Tabata, GO/REST já vêm na trilha — não empilha bip de fase.
+  if (!musicOwnsTempo) playSound('phase')
+
+  // Voz de início de fase (mesmo com música).
   const label = phase.label.toLowerCase()
   if (phase.kind === 'work' && phase.round) {
     speak(`${label}. Ronda ${phase.round}`)
@@ -505,7 +508,8 @@ export function announcePhase(phase: Phase | null, next?: Phase | null): void {
     speak(label)
   }
 
-  if (next && !shouldSilenceAmbient()) {
+  // Sem “em seguida…” por cima da batida (dois tempos ao mesmo tempo).
+  if (next && !shouldSilenceAmbient() && !musicOwnsTempo) {
     window.setTimeout(() => {
       speak(`Em seguida, ${next.label.toLowerCase()}`)
     }, 1100)
@@ -526,22 +530,22 @@ export function onCountdownSecond(remaining: number, phase: Phase | null, warnin
   const whole = Math.ceil(remaining)
   ensureAudioReady()
 
-  // External YouTube/Spotify: hush ticks when ducking detects other audio.
-  const hush = shouldSilenceAmbient()
+  // Um tempo de cada vez: Spotify OU nossa música Tabata → sem tic-tac / countdown falado
+  // (a trilha já faz o metrônomo e o 3-2-1).
+  const musicTempo = shouldSilenceAmbient() || isWorkoutMusicAudible()
 
-  if (settings?.ticking && whole > 0 && !hush) {
+  if (settings?.ticking && whole > 0 && !musicTempo) {
     playSound('tick')
     void vibrate('tick')
   }
 
-  if (warning > 0 && whole === warning) {
+  if (warning > 0 && whole === warning && !musicTempo) {
     playSound('warning')
     void vibrate('warning')
     speak(`${warning} segundos`)
   }
 
-  // Countdown chatter stays off while music plays — only start/end alerts remain.
-  if (!hush && whole <= 3 && whole >= 1) {
+  if (!musicTempo && whole <= 3 && whole >= 1) {
     speak(String(whole))
   }
 }

@@ -123,9 +123,13 @@ export default function App() {
   const handlePhaseEvent = useCallback(
     (phase: Phase, next: Phase | null) => {
       flashScreen()
+      // Sobe a trilha antes dos alertas para o tempo da música mandar (sem tic-tac/bip duplicado).
+      if (tab === 'tabata' && generalSettings.workoutMusic) {
+        syncWorkoutMusic(phase, true, phase.duration)
+      }
       feedbackPhaseStart(phase, next)
     },
-    [flashScreen],
+    [flashScreen, generalSettings.workoutMusic, tab],
   )
 
   const handleSecond = useCallback(
