@@ -156,8 +156,8 @@ export function GeneralSettingsModal({
           <div>
             <span>NOSSA MÚSICA TABATA</span>
             <small>
-              BATIDA PRÓPRIA DO APP — SÓ NO TABATA. FORTE NO EXERCÍCIO, SUAVE NO DESCANSO. SEM
-              YOUTUBE.
+              SÓ NO TABATA. MUDA EM PREPARAR / ESFORÇO / PAUSA / ENTRE CICLOS / COOLDOWN — COM CUES
+              GO, REST E 3-2-1.
             </small>
           </div>
           <button

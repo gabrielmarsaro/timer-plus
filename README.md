@@ -13,7 +13,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## iPhone (Safari)
 
-**https://nova-system-g86ag37.shipstatic.com**
+**https://keen-hole-sv85hj7.shipstatic.com**
 
 1. Abra no **Safari**.  
 2. Desative o **mute lateral** e aumente o volume.  
@@ -29,13 +29,17 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
 
-Página de download: https://nova-system-g86ag37.shipstatic.com/baixar.html
+Página de download: https://keen-hole-sv85hj7.shipstatic.com/baixar.html
+
+## Tabata (protocolo)
+
+Padrão clássico: **preparar → (20s esforço / 10s pausa) × 8 rondas → cooldown**, com **descanso entre ciclos** se houver mais de 1 ciclo.  
+No editor: botão **PRESET CLÁSSICO 20/10 × 8**.
 
 ## Música Tabata
 
-Trilha **própria** do app (só na aba Tabata): **TABATA 160**, **HIIT 140**, **POWER 150**.  
-Forte no exercício, suave no descanso. Liga/desliga e troca a faixa em Configurações.  
-“Respeitar música” silencia a batida se Spotify/Deezer já estiver tocando.
+Trilha **própria** (só na aba Tabata): **TABATA 160** / **HIIT 140** / **POWER 150**.  
+A batida muda por fase (preparar, esforço, pausa, entre ciclos, cooldown), com cues **GO / REST** e **3-2-1**.
 
 ## Entrega em todas as plataformas
 

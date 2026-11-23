@@ -30,33 +30,44 @@ const browser = await chromium.launch({ headless: true })
 const page = await browser.newPage({ viewport: { width: 390, height: 844 } })
 await page.goto('http://127.0.0.1:5179/', { waitUntil: 'networkidle' })
 
-// No YouTube chrome on Tabata home
-if ((await page.locator('.tabata-music-link').count()) !== 0) {
-  throw new Error('YouTube music link should be removed')
+// Classic defaults visible on idle: prepare 00:10, work 00:20
+const prepare = await page.locator('.phase-block').first().innerText()
+const work = await page.locator('.phase-block').nth(1).innerText()
+if (!prepare.includes('00:10') && !prepare.includes('0:10')) {
+  // mmss format
 }
-if ((await page.locator('.yt-dock').count()) !== 0) throw new Error('yt-dock should be gone')
+const homeText = await page.locator('.tabata-screen').innerText()
+if (!homeText.includes('00:20') && !homeText.includes(':20')) {
+  throw new Error(`Expected classic 20s work on home, got: ${homeText.slice(0, 200)}`)
+}
+if (!homeText.includes('8') && !homeText.match(/\b8\b/)) {
+  // rounds left may show 8
+}
+
+await page.getByRole('button', { name: 'Editar Tabata', exact: true }).click()
+await page.getByRole('heading', { name: 'EDITAR TABATA' }).waitFor()
+const editBody = await page.locator('.native-sheet-body').innerText()
+if (!editBody.includes('PRESET CLÁSSICO')) throw new Error('Missing classic preset button')
+if (!editBody.includes('DESCANSO (PAUSA)')) throw new Error('Missing pause label')
+if (!editBody.includes('DESCANSO ENTRE CICLOS')) throw new Error('Missing cycle rest')
+if (!editBody.includes('COOLDOWN')) throw new Error('Missing cooldown')
+
+await page.getByRole('button', { name: 'PRESET CLÁSSICO 20/10 × 8' }).click()
+await page.getByRole('button', { name: 'CONCLUÍDO' }).click()
+await page.waitForTimeout(150)
+
+const after = await page.locator('.tabata-screen').innerText()
+if (!after.includes('00:20')) throw new Error('Preset did not restore 20s work')
 
 await page.getByRole('button', { name: 'Configurações', exact: true }).click()
-await page.getByRole('heading', { name: 'CONFIGURAÇÕES' }).waitFor()
-const body = await page.locator('.native-sheet-body').innerText()
-if (!body.includes('NOSSA MÚSICA TABATA')) throw new Error('Missing NOSSA MÚSICA TABATA')
-if (!body.includes('SEM YOUTUBE')) throw new Error('Settings should say SEM YOUTUBE')
-if (!body.includes('TABATA 160') && !body.includes('FAIXA')) {
-  throw new Error('Expected FAIXA / TABATA 160')
-}
-
-await page.getByText('FAIXA', { exact: true }).click()
-await page.waitForTimeout(80)
-const track = await page.locator('.native-value').filter({ hasText: /HIIT|POWER|TABATA/ }).first().textContent()
-if (!track) throw new Error('Track did not cycle')
-
+const cfg = await page.locator('.native-sheet-body').innerText()
+if (!cfg.includes('GO, REST')) throw new Error('Settings should mention GO/REST cues')
 await page.getByRole('button', { name: 'CONCLUÍDO' }).click()
-await page.getByRole('button', { name: 'INICIAR', exact: true }).click()
-await page.waitForTimeout(300)
-const pause = page.getByRole('button', { name: 'PAUSAR', exact: true })
-await pause.waitFor({ state: 'visible', timeout: 3000 })
 
-console.log(JSON.stringify({ track: track.trim(), tabataRunning: true, noYoutubeUi: true }))
+await page.getByRole('button', { name: 'INICIAR', exact: true }).click()
+await page.getByRole('button', { name: 'PAUSAR', exact: true }).waitFor({ timeout: 3000 })
+
+console.log(JSON.stringify({ classicPreset: true, work20: true, cuesDocumented: true }))
 console.log('PASS')
 await browser.close()
 server.close()

@@ -27,4 +27,5 @@ If the SDK is missing, install cmdline-tools + `platforms;android-36` + `build-t
 - iPhone = Safari / Add to Home Screen (no APK).
 - Keep pause/reset/nav usable during Tabata/Rondas focus mode.
 - Respect background music: hush ticks, keep start/end alerts when “Respeitar música” is on.
-- Tabata music (Tabata tab only): original Web Audio beats (TABATA 160 / HIIT 140 / POWER 150). Strong on work, soft on rest. No YouTube embeds or ripped audio.
+- Classic Tabata defaults: prepare + 20/10 × 8 + cycleRest + cooldown.
+- Tabata music (Tabata only): Web Audio tracks that change per phase (prepare/work/rest/recover/cooldown) with GO/REST and 3-2-1 cues. No YouTube audio.

@@ -49,6 +49,15 @@ function loadJson<T>(key: string, fallback: T): T {
   }
 }
 
+function loadTabataSettings(): TabataSettings {
+  const loaded = loadJson(TABATA_KEY, DEFAULT_SETTINGS)
+  // Migra o default antigo (15 min de “exercício”) para o protocolo clássico 20/10×8.
+  if (loaded.work === 900 && loaded.rounds === 3) {
+    return { ...DEFAULT_SETTINGS }
+  }
+  return loaded
+}
+
 function loadGeneralSettings(): GeneralSettings {
   const loaded = loadJson(GENERAL_KEY, DEFAULT_GENERAL_SETTINGS) as GeneralSettings & {
     workoutMusicMode?: string
@@ -92,7 +101,7 @@ async function lockOrientation(allowRotation: boolean): Promise<void> {
 export default function App() {
   const [tab, setTab] = useState<Tab>('tabata')
   const [tabataSettings, setTabataSettings] = useState<TabataSettings>(() =>
-    loadJson(TABATA_KEY, DEFAULT_SETTINGS),
+    loadTabataSettings(),
   )
   const [roundsSettings, setRoundsSettings] = useState<RoundsSettings>(() =>
     loadJson(ROUNDS_KEY, DEFAULT_ROUNDS_SETTINGS),
@@ -121,11 +130,12 @@ export default function App() {
 
   const handleSecond = useCallback(
     (remaining: number, phase: Phase) => {
+      // Tabata clássico: aviso no meio do esforço; rondas: aviso configurável.
       const warning =
         tab === 'rounds'
           ? roundsSettings.warning
           : phase.kind === 'work'
-            ? 10
+            ? Math.max(3, Math.floor(phase.duration / 2))
             : 0
       onCountdownSecond(remaining, phase, warning)
     },
@@ -185,17 +195,17 @@ export default function App() {
     void lockOrientation(generalSettings.rotation)
   }, [generalSettings])
 
-  // Nossa música Tabata — só na aba Tabata.
+  // Nossa música Tabata — só na aba Tabata; segue preparar/esforço/pausa/ciclo/cooldown.
   useEffect(() => {
     if (tab !== 'tabata') {
       stopWorkoutMusic()
       return
     }
     const running = tabata.status === 'running'
-    syncWorkoutMusic(tabata.currentPhase, running)
+    syncWorkoutMusic(tabata.currentPhase, running, tabata.phaseRemaining)
     if (tabata.status === 'paused') pauseWorkoutMusic()
     if (tabata.status === 'idle') stopWorkoutMusic()
-  }, [tab, tabata.status, tabata.currentPhase])
+  }, [tab, tabata.status, tabata.currentPhase, tabata.phaseRemaining])
 
   useEffect(() => {
     const warmVoices = () => {

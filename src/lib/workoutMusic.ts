@@ -2,7 +2,8 @@ import type { GeneralSettings, Phase, PhaseKind, WorkoutMusicTrack } from '../ty
 
 export type WorkoutTrack = WorkoutMusicTrack
 
-type MusicIntensity = 'off' | 'low' | 'high'
+/** Intensidade musical por fase do protocolo Tabata. */
+type MusicFeel = 'off' | 'prepare' | 'work' | 'rest' | 'recover' | 'cooldown'
 
 interface TrackProfile {
   label: string
@@ -10,7 +11,7 @@ interface TrackProfile {
   swing: number
 }
 
-/** Trilhas próprias do Timer Plus — geradas no aparelho (Web Audio). */
+/** Trilhas próprias — batida muda em PREPARAR / EXERCÍCIO / DESCANSO / CICLO / COOLDOWN. */
 export const WORKOUT_TRACKS: Array<{ id: WorkoutTrack; label: string }> = [
   { id: 'pulse', label: 'TABATA 160' },
   { id: 'drive', label: 'HIIT 140' },
@@ -33,12 +34,14 @@ let sharedCtx: AudioContext | null = null
 let master: GainNode | null = null
 let settings: GeneralSettings | null = null
 let track: WorkoutTrack = 'pulse'
-let intensity: MusicIntensity = 'off'
+let feel: MusicFeel = 'off'
 let running = false
 let timerId = 0
 let nextNoteTime = 0
 let step = 0
 let externalBlocked = false
+let currentKind: PhaseKind | null = null
+let lastCountdown = -1
 
 const LOOKAHEAD_MS = 25
 const SCHEDULE_AHEAD = 0.12
@@ -79,33 +82,45 @@ function setMasterGain(level: number, when = 0): void {
   if (!ctx || !master) return
   const t = Math.max(ctx.currentTime, when)
   master.gain.cancelScheduledValues(t)
-  master.gain.setTargetAtTime(level, t, 0.05)
+  master.gain.setTargetAtTime(level, t, 0.045)
 }
 
-function intensityForPhase(kind: PhaseKind | undefined): MusicIntensity {
+function feelForPhase(kind: PhaseKind | undefined): MusicFeel {
   if (!kind) return 'off'
-  if (kind === 'work') return 'high'
-  if (kind === 'prepare' || kind === 'rest' || kind === 'cycleRest' || kind === 'cooldown') {
-    return 'low'
-  }
+  if (kind === 'work') return 'work'
+  if (kind === 'rest') return 'rest'
+  if (kind === 'cycleRest') return 'recover'
+  if (kind === 'prepare') return 'prepare'
+  if (kind === 'cooldown') return 'cooldown'
   return 'off'
 }
 
-function targetGain(level: MusicIntensity): number {
+function targetGain(level: MusicFeel): number {
   const vol = Math.max(0.05, settings?.volume ?? 0.8)
-  if (level === 'high') return 0.24 * vol
-  if (level === 'low') return 0.08 * vol
-  return 0
+  switch (level) {
+    case 'work':
+      return 0.26 * vol
+    case 'prepare':
+      return 0.12 * vol
+    case 'rest':
+      return 0.1 * vol
+    case 'recover':
+      return 0.07 * vol
+    case 'cooldown':
+      return 0.06 * vol
+    default:
+      return 0
+  }
 }
 
 function playKick(ctx: AudioContext, time: number, gain: GainNode, hard: boolean): void {
   const osc = ctx.createOscillator()
   const g = ctx.createGain()
   osc.type = 'sine'
-  osc.frequency.setValueAtTime(hard ? 170 : 140, time)
-  osc.frequency.exponentialRampToValueAtTime(42, time + 0.14)
-  g.gain.setValueAtTime(hard ? 1 : 0.75, time)
-  g.gain.exponentialRampToValueAtTime(0.001, time + (hard ? 0.2 : 0.15))
+  osc.frequency.setValueAtTime(hard ? 175 : 135, time)
+  osc.frequency.exponentialRampToValueAtTime(40, time + 0.14)
+  g.gain.setValueAtTime(hard ? 1 : 0.7, time)
+  g.gain.exponentialRampToValueAtTime(0.001, time + (hard ? 0.2 : 0.14))
   osc.connect(g)
   g.connect(gain)
   osc.start(time)
@@ -140,24 +155,24 @@ function playNoiseHit(
 }
 
 function playSnare(ctx: AudioContext, time: number, gain: GainNode): void {
-  playNoiseHit(ctx, time, gain, { dur: 0.11, freq: 1800, vol: 0.5, type: 'bandpass' })
+  playNoiseHit(ctx, time, gain, { dur: 0.1, freq: 1800, vol: 0.48, type: 'bandpass' })
   const osc = ctx.createOscillator()
   const g = ctx.createGain()
   osc.type = 'triangle'
-  osc.frequency.setValueAtTime(220, time)
-  g.gain.setValueAtTime(0.22, time)
-  g.gain.exponentialRampToValueAtTime(0.001, time + 0.08)
+  osc.frequency.setValueAtTime(210, time)
+  g.gain.setValueAtTime(0.2, time)
+  g.gain.exponentialRampToValueAtTime(0.001, time + 0.07)
   osc.connect(g)
   g.connect(gain)
   osc.start(time)
-  osc.stop(time + 0.09)
+  osc.stop(time + 0.08)
 }
 
 function playHat(ctx: AudioContext, time: number, gain: GainNode, open: boolean): void {
   playNoiseHit(ctx, time, gain, {
-    dur: open ? 0.07 : 0.025,
-    freq: 7500,
-    vol: open ? 0.2 : 0.11,
+    dur: open ? 0.07 : 0.022,
+    freq: 7600,
+    vol: open ? 0.18 : 0.1,
     type: 'highpass',
   })
 }
@@ -169,64 +184,128 @@ function playBass(ctx: AudioContext, time: number, gain: GainNode, freq: number)
   osc.frequency.setValueAtTime(freq, time)
   const filter = ctx.createBiquadFilter()
   filter.type = 'lowpass'
-  filter.frequency.setValueAtTime(420, time)
-  filter.frequency.exponentialRampToValueAtTime(120, time + 0.18)
-  g.gain.setValueAtTime(0.18, time)
-  g.gain.exponentialRampToValueAtTime(0.001, time + 0.2)
+  filter.frequency.setValueAtTime(400, time)
+  filter.frequency.exponentialRampToValueAtTime(110, time + 0.16)
+  g.gain.setValueAtTime(0.16, time)
+  g.gain.exponentialRampToValueAtTime(0.001, time + 0.18)
   osc.connect(filter)
   filter.connect(g)
   g.connect(gain)
   osc.start(time)
-  osc.stop(time + 0.22)
+  osc.stop(time + 0.2)
 }
 
-function playStab(ctx: AudioContext, time: number, gain: GainNode, freq: number): void {
+function playStab(ctx: AudioContext, time: number, gain: GainNode, freq: number, vol = 0.09): void {
   const osc = ctx.createOscillator()
   const g = ctx.createGain()
   osc.type = 'square'
   osc.frequency.setValueAtTime(freq, time)
-  g.gain.setValueAtTime(0.08, time)
-  g.gain.exponentialRampToValueAtTime(0.001, time + 0.09)
+  g.gain.setValueAtTime(vol, time)
+  g.gain.exponentialRampToValueAtTime(0.001, time + 0.1)
   osc.connect(g)
   g.connect(gain)
   osc.start(time)
-  osc.stop(time + 0.1)
+  osc.stop(time + 0.11)
+}
+
+/** Cue de transição estilo Tabata Songs: GO / REST / RECOVER / etc. */
+function playPhaseCue(kind: PhaseKind): void {
+  const ctx = getCtx()
+  if (!ctx) return
+  const dest = ensureMaster(ctx)
+  const now = ctx.currentTime + 0.02
+
+  if (kind === 'work') {
+    // GO — dois stabs ascendentes
+    playKick(ctx, now, dest, true)
+    playStab(ctx, now, dest, 330, 0.16)
+    playStab(ctx, now + 0.09, dest, 440, 0.14)
+    playSnare(ctx, now + 0.05, dest)
+    return
+  }
+  if (kind === 'rest') {
+    // REST / pausa — tom grave
+    playKick(ctx, now, dest, false)
+    playStab(ctx, now, dest, 165, 0.12)
+    playStab(ctx, now + 0.12, dest, 130, 0.1)
+    return
+  }
+  if (kind === 'cycleRest') {
+    playKick(ctx, now, dest, false)
+    playStab(ctx, now, dest, 110, 0.1)
+    return
+  }
+  if (kind === 'prepare') {
+    playHat(ctx, now, dest, true)
+    playStab(ctx, now, dest, 260, 0.1)
+    return
+  }
+  if (kind === 'cooldown') {
+    playKick(ctx, now, dest, false)
+    playBass(ctx, now, dest, 55)
+  }
+}
+
+function playCountdownBeep(n: number): void {
+  const ctx = getCtx()
+  if (!ctx) return
+  const dest = ensureMaster(ctx)
+  const now = ctx.currentTime
+  const freq = n === 1 ? 880 : n === 2 ? 740 : 660
+  playStab(ctx, now, dest, freq, 0.14)
+  if (n === 1) playKick(ctx, now, dest, true)
 }
 
 function scheduleStep(ctx: AudioContext, time: number, currentStep: number): void {
-  if (intensity === 'off') return
+  if (feel === 'off') return
   const profile = PROFILES[track]
   const dest = ensureMaster(ctx)
   const beat = currentStep % 16
   const swung = time + ((beat % 2 === 1 ? profile.swing : 0) * (60 / profile.bpm) * 0.25)
-  const work = intensity === 'high'
 
-  if (track === 'pulse') {
-    // Classic Tabata four-on-the-floor @ 160
-    if (beat % 4 === 0) playKick(ctx, swung, dest, work && beat === 0)
+  if (feel === 'work') {
+    // Intervalo de exercício — full push
+    if (beat % 4 === 0) playKick(ctx, swung, dest, beat === 0)
     if (beat === 4 || beat === 12) playSnare(ctx, swung, dest)
-    if (work || beat % 2 === 0) playHat(ctx, swung, dest, beat % 8 === 6)
+    playHat(ctx, swung, dest, beat % 8 === 6)
     if (beat % 8 === 0) playBass(ctx, swung, dest, beat % 16 === 0 ? 55 : 73)
-    if (work && (beat === 0 || beat === 8)) playStab(ctx, swung, dest, beat === 0 ? 220 : 247)
-  } else if (track === 'drive') {
-    if (beat === 0 || beat === 6 || beat === 10) playKick(ctx, swung, dest, beat === 0)
-    if (beat === 4 || beat === 12) playSnare(ctx, swung, dest)
-    playHat(ctx, swung, dest, work && beat % 4 === 3)
-    if (beat === 0 || beat === 8) playBass(ctx, swung, dest, beat === 0 ? 49 : 65)
-    if (work && beat % 4 === 2) playStab(ctx, swung, dest, 165)
-  } else {
-    // storm / power
-    if (beat % 4 === 0 || (work && beat === 6)) playKick(ctx, swung, dest, beat % 8 === 0)
-    if (beat === 4 || beat === 12) playSnare(ctx, swung, dest)
-    if (beat % 2 === 1 || work) playHat(ctx, swung, dest, false)
-    if (beat % 4 === 0) playBass(ctx, swung, dest, beat % 8 === 0 ? 61 : 82)
-    if (work && beat === 0) playStab(ctx, swung, dest, 277)
+    if (beat === 0 || beat === 8) playStab(ctx, swung, dest, beat === 0 ? 220 : 247)
+    return
+  }
+
+  if (feel === 'rest') {
+    // Pausa curta 10s — half-time, sem snare (respiro)
+    if (beat === 0 || beat === 8) playKick(ctx, swung, dest, false)
+    if (beat % 4 === 0) playHat(ctx, swung, dest, false)
+    if (beat === 0) playBass(ctx, swung, dest, 49)
+    return
+  }
+
+  if (feel === 'recover') {
+    // Descanso entre ciclos — quase silêncio rítmico
+    if (beat === 0) playKick(ctx, swung, dest, false)
+    if (beat === 8) playHat(ctx, swung, dest, true)
+    return
+  }
+
+  if (feel === 'prepare') {
+    // Contagem pré-treino — metrônomo subindo
+    if (beat % 4 === 0) playKick(ctx, swung, dest, beat === 0)
+    if (beat % 2 === 0) playHat(ctx, swung, dest, beat % 8 === 6)
+    if (beat === 12) playStab(ctx, swung, dest, 300, 0.08)
+    return
+  }
+
+  if (feel === 'cooldown') {
+    if (beat === 0 || beat === 8) playKick(ctx, swung, dest, false)
+    if (beat === 0) playBass(ctx, swung, dest, 41)
+    if (beat === 8) playHat(ctx, swung, dest, true)
   }
 }
 
 function scheduler(): void {
   const ctx = getCtx()
-  if (!ctx || !running || intensity === 'off') return
+  if (!ctx || !running || feel === 'off') return
   if (externalBlocked) return
   const profile = PROFILES[track]
   const secondsPerStep = 60 / profile.bpm / 4
@@ -245,7 +324,6 @@ function startScheduler(): void {
   if (ctx.state === 'suspended') void ctx.resume().catch(() => undefined)
   if (!running) {
     running = true
-    step = 0
     nextNoteTime = ctx.currentTime + 0.05
   }
   if (!timerId) {
@@ -264,7 +342,9 @@ function stopScheduler(): void {
 
 export function stopWorkoutMusic(): void {
   stopScheduler()
-  intensity = 'off'
+  feel = 'off'
+  currentKind = null
+  lastCountdown = -1
   setMasterGain(0)
 }
 
@@ -278,8 +358,15 @@ export function setExternalMusicBlocked(blocked: boolean): void {
   if (blocked) pauseWorkoutMusic()
 }
 
-/** Só chama quando o Tabata está a correr. */
-export function syncWorkoutMusic(phase: Phase | null, isRunning: boolean): void {
+/**
+ * Sincroniza a trilha com a fase Tabata.
+ * @param remainingSec — segundos restantes da fase (cues 3-2-1 no fim do intervalo)
+ */
+export function syncWorkoutMusic(
+  phase: Phase | null,
+  isRunning: boolean,
+  remainingSec = 0,
+): void {
   if (!settings?.workoutMusic || !isRunning) {
     stopWorkoutMusic()
     return
@@ -290,30 +377,56 @@ export function syncWorkoutMusic(phase: Phase | null, isRunning: boolean): void 
   }
 
   track = settings.workoutMusicTrack
-  const next = intensityForPhase(phase?.kind)
-  intensity = next
-  if (next === 'off') {
+  const nextFeel = feelForPhase(phase?.kind)
+  feel = nextFeel
+
+  if (nextFeel === 'off' || !phase) {
     stopWorkoutMusic()
     return
   }
 
+  if (phase.kind !== currentKind) {
+    currentKind = phase.kind
+    step = 0
+    lastCountdown = -1
+    const ctx = getCtx()
+    if (ctx) nextNoteTime = ctx.currentTime + 0.03
+    playPhaseCue(phase.kind)
+  }
+
+  const whole = Math.ceil(remainingSec)
+  // Countdown musical nos últimos 3s de cada intervalo (exceto prepare curto já coberto)
+  if (whole >= 1 && whole <= 3 && whole !== lastCountdown) {
+    lastCountdown = whole
+    playCountdownBeep(whole)
+  }
+  if (whole > 3) lastCountdown = -1
+
   startScheduler()
-  setMasterGain(targetGain(next))
+  setMasterGain(targetGain(nextFeel))
 }
 
 export function previewWorkoutTrack(nextTrack: WorkoutTrack): void {
   track = nextTrack
-  intensity = 'high'
+  feel = 'work'
+  currentKind = 'work'
+  lastCountdown = -1
   externalBlocked = false
+  step = 0
+  playPhaseCue('work')
   startScheduler()
-  setMasterGain(targetGain('high'))
+  setMasterGain(targetGain('work'))
+  window.setTimeout(() => {
+    // Mini demo: GO → rest feel
+    feel = 'rest'
+    playPhaseCue('rest')
+    setMasterGain(targetGain('rest'))
+  }, 1200)
   window.setTimeout(() => {
     stopWorkoutMusic()
-  }, 2000)
+  }, 2400)
 }
 
 export function isWorkoutMusicAudible(): boolean {
-  return Boolean(
-    settings?.workoutMusic && running && intensity !== 'off' && !externalBlocked,
-  )
+  return Boolean(settings?.workoutMusic && running && feel !== 'off' && !externalBlocked)
 }
