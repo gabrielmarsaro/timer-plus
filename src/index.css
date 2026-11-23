@@ -1259,6 +1259,24 @@ button.phase-block:not(:disabled) {
   line-height: 1.35;
 }
 
+.edit-preset-btn {
+  margin: 4px 16px 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #333;
+  background: #141414;
+  color: var(--accent);
+  font-size: 0.92rem;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+.app-shell.theme-light .edit-preset-btn {
+  background: #fff;
+  border-color: #ccc;
+  color: #111;
+}
+
 .edit-intro strong {
   color: var(--accent);
 }

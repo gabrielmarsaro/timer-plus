@@ -22,13 +22,13 @@ import {
   previewSound,
   unlockFeedback,
 } from './lib/feedback'
+import { pauseWorkoutMusic, stopWorkoutMusic, syncWorkoutMusic } from './lib/workoutMusic'
 import { buildPhases, buildRoundsPhases } from './lib/buildPhases'
 import {
   DEFAULT_GENERAL_SETTINGS,
   DEFAULT_ROUNDS_SETTINGS,
   DEFAULT_SETTINGS,
   type GeneralSettings,
-  type Phase,
   type RoundsSettings,
   type Tab,
   type TabataSettings,
@@ -45,6 +45,39 @@ function loadJson<T>(key: string, fallback: T): T {
     return { ...fallback, ...JSON.parse(raw) }
   } catch {
     return fallback
+  }
+}
+
+function loadTabataSettings(): TabataSettings {
+  const loaded = loadJson(TABATA_KEY, DEFAULT_SETTINGS)
+  // Migra o default antigo (15 min de “exercício”) para o protocolo clássico 20/10×8.
+  if (loaded.work === 900 && loaded.rounds === 3) {
+    return { ...DEFAULT_SETTINGS }
+  }
+  return loaded
+}
+
+function loadGeneralSettings(): GeneralSettings {
+  const loaded = loadJson(GENERAL_KEY, DEFAULT_GENERAL_SETTINGS) as GeneralSettings & {
+    workoutMusicMode?: string
+    workoutMusicTrack?: string
+  }
+  const legacyMode = loaded.workoutMusicMode
+  const music =
+    typeof loaded.workoutMusic === 'boolean'
+      ? loaded.workoutMusic
+      : legacyMode
+        ? legacyMode !== 'off'
+        : DEFAULT_GENERAL_SETTINGS.workoutMusic
+  const track =
+    loaded.workoutMusicTrack === 'drive' || loaded.workoutMusicTrack === 'storm'
+      ? loaded.workoutMusicTrack
+      : 'pulse'
+  return {
+    ...DEFAULT_GENERAL_SETTINGS,
+    ...loaded,
+    workoutMusic: music,
+    workoutMusicTrack: track,
   }
 }
 
@@ -67,13 +100,13 @@ async function lockOrientation(allowRotation: boolean): Promise<void> {
 export default function App() {
   const [tab, setTab] = useState<Tab>('tabata')
   const [tabataSettings, setTabataSettings] = useState<TabataSettings>(() =>
-    loadJson(TABATA_KEY, DEFAULT_SETTINGS),
+    loadTabataSettings(),
   )
   const [roundsSettings, setRoundsSettings] = useState<RoundsSettings>(() =>
     loadJson(ROUNDS_KEY, DEFAULT_ROUNDS_SETTINGS),
   )
   const [generalSettings, setGeneralSettings] = useState<GeneralSettings>(() =>
-    loadJson(GENERAL_KEY, DEFAULT_GENERAL_SETTINGS),
+    loadGeneralSettings(),
   )
   const [generalOpen, setGeneralOpen] = useState(false)
   const [workoutEditOpen, setWorkoutEditOpen] = useState(false)
@@ -86,36 +119,31 @@ export default function App() {
     window.setTimeout(() => setScreenFlash(false), 160)
   }, [generalSettings.screenFlash])
 
-  const handlePhaseEvent = useCallback(
-    (phase: Phase, next: Phase | null) => {
-      flashScreen()
-      feedbackPhaseStart(phase, next)
-    },
-    [flashScreen],
-  )
-
-  const handleSecond = useCallback(
-    (remaining: number, phase: Phase) => {
-      const warning =
-        tab === 'rounds'
-          ? roundsSettings.warning
-          : phase.kind === 'work'
-            ? 10
-            : 0
-      onCountdownSecond(remaining, phase, warning)
-    },
-    [roundsSettings.warning, tab],
-  )
-
   const tabataPhases = useMemo(() => buildPhases(tabataSettings), [tabataSettings])
   const roundsPhases = useMemo(() => buildRoundsPhases(roundsSettings), [roundsSettings])
 
   const tabata = usePhaseTimer(tabataPhases, {
     totalRounds: tabataSettings.rounds,
     totalCycles: tabataSettings.cycles,
-    onStart: handlePhaseEvent,
-    onPhaseChange: handlePhaseEvent,
-    onSecond: handleSecond,
+    onStart: (phase, next) => {
+      flashScreen()
+      if (generalSettings.workoutMusic) {
+        syncWorkoutMusic(phase, true, phase.duration)
+      }
+      feedbackPhaseStart(phase, next)
+    },
+    onPhaseChange: (phase, next) => {
+      flashScreen()
+      if (generalSettings.workoutMusic) {
+        syncWorkoutMusic(phase, true, phase.duration)
+      }
+      feedbackPhaseStart(phase, next)
+    },
+    onSecond: (remaining, phase) => {
+      const warning =
+        phase.kind === 'work' ? Math.max(3, Math.floor(phase.duration / 2)) : 0
+      onCountdownSecond(remaining, phase, warning)
+    },
     onComplete: () => {
       flashScreen()
       announceDone()
@@ -125,9 +153,18 @@ export default function App() {
   const rounds = usePhaseTimer(roundsPhases, {
     totalRounds: roundsSettings.rounds,
     totalCycles: 1,
-    onStart: handlePhaseEvent,
-    onPhaseChange: handlePhaseEvent,
-    onSecond: handleSecond,
+    onStart: (phase, next) => {
+      flashScreen()
+      stopWorkoutMusic()
+      feedbackPhaseStart(phase, next)
+    },
+    onPhaseChange: (phase, next) => {
+      flashScreen()
+      feedbackPhaseStart(phase, next)
+    },
+    onSecond: (remaining, phase) => {
+      onCountdownSecond(remaining, phase, roundsSettings.warning)
+    },
     onComplete: () => {
       flashScreen()
       announceDone()
@@ -159,6 +196,18 @@ export default function App() {
       : 'false'
     void lockOrientation(generalSettings.rotation)
   }, [generalSettings])
+
+  // Nossa música Tabata — só na aba Tabata; segue preparar/esforço/pausa/ciclo/cooldown.
+  useEffect(() => {
+    if (tab !== 'tabata') {
+      stopWorkoutMusic()
+      return
+    }
+    const running = tabata.status === 'running'
+    syncWorkoutMusic(tabata.currentPhase, running, tabata.phaseRemaining)
+    if (tabata.status === 'paused') pauseWorkoutMusic()
+    if (tabata.status === 'idle') stopWorkoutMusic()
+  }, [tab, tabata.status, tabata.currentPhase, tabata.phaseRemaining])
 
   useEffect(() => {
     const warmVoices = () => {
@@ -200,12 +249,45 @@ export default function App() {
     }
   }
 
+  /** Só um cronómetro ativo: ao iniciar um, zera os outros. */
+  const stopOtherActivities = useCallback(
+    (keep: 'tabata' | 'rounds' | 'stopwatch') => {
+      if (keep !== 'tabata' && tabata.status !== 'idle') {
+        tabata.reset()
+        stopWorkoutMusic()
+      }
+      if (keep !== 'rounds' && rounds.status !== 'idle') {
+        rounds.reset()
+      }
+      if (keep !== 'stopwatch' && stopwatch.status !== 'idle') {
+        stopwatch.reset()
+      }
+    },
+    [rounds, stopwatch, tabata],
+  )
+
+  const selectTab = useCallback(
+    (next: Tab) => {
+      if (next !== tab) {
+        if (next !== 'tabata' && tabata.status !== 'idle') {
+          tabata.reset()
+          stopWorkoutMusic()
+        }
+        if (next !== 'rounds' && rounds.status !== 'idle') rounds.reset()
+        if (next !== 'stopwatch' && stopwatch.status !== 'idle') stopwatch.reset()
+      }
+      setTab(next)
+    },
+    [rounds, stopwatch, tab, tabata],
+  )
+
   const makeToggle =
-    (timer: typeof tabata) =>
+    (timer: typeof tabata, kind: 'tabata' | 'rounds') =>
     () => {
       unlockFeedback()
 
       if (timer.status === 'running') {
+        pauseWorkoutMusic()
         timer.pause()
         return
       }
@@ -213,6 +295,7 @@ export default function App() {
         void timer.resume()
         return
       }
+      stopOtherActivities(kind)
       maybeShowIosTip()
       void timer.start()
     }
@@ -227,6 +310,8 @@ export default function App() {
       stopwatch.resume()
       return
     }
+    stopOtherActivities('stopwatch')
+    stopWorkoutMusic()
     maybeShowIosTip()
     stopwatch.start()
     previewSound()
@@ -264,7 +349,7 @@ export default function App() {
             timeFormat={generalSettings.timeFormat}
             onOpenGeneralSettings={() => setGeneralOpen(true)}
             onOpenWorkoutEdit={() => setWorkoutEditOpen(true)}
-            onToggle={makeToggle(tabata)}
+            onToggle={makeToggle(tabata, 'tabata')}
             onReset={tabata.reset}
           />
         )}
@@ -282,7 +367,7 @@ export default function App() {
             timeFormat={generalSettings.timeFormat}
             onOpenGeneralSettings={() => setGeneralOpen(true)}
             onOpenWorkoutEdit={() => setWorkoutEditOpen(true)}
-            onToggle={makeToggle(rounds)}
+            onToggle={makeToggle(rounds, 'rounds')}
             onReset={rounds.reset}
           />
         )}
@@ -302,14 +387,14 @@ export default function App() {
         {tab === 'more' && (
           <MoreScreen
             onOpenGeneralSettings={() => setGeneralOpen(true)}
-            onGoTabata={() => setTab('tabata')}
-            onGoRounds={() => setTab('rounds')}
-            onGoStopwatch={() => setTab('stopwatch')}
+            onGoTabata={() => selectTab('tabata')}
+            onGoRounds={() => selectTab('rounds')}
+            onGoStopwatch={() => selectTab('stopwatch')}
           />
         )}
       </main>
 
-      <BottomNav active={tab} onChange={setTab} />
+      <BottomNav active={tab} onChange={selectTab} />
 
       <IosAudioTip open={iosAudioTip} onClose={() => setIosAudioTip(false)} />
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { CountWheel, DurationWheel } from './WheelPicker'
-import type { RoundsSettings, TabataSettings } from '../types'
+import { CLASSIC_TABATA_PRESET, type RoundsSettings, type TabataSettings } from '../types'
 
 type Mode = 'tabata' | 'rounds'
 type AnySettings = TabataSettings | RoundsSettings
@@ -15,9 +15,9 @@ interface FieldDef {
 }
 
 const TABATA_FIELDS: FieldDef[] = [
-  { key: 'prepare', label: 'PREPARAR', min: 0, max: 600, step: 5 },
-  { key: 'work', label: 'EXERCÍCIO', min: 1, max: 3600, step: 5 },
-  { key: 'rest', label: 'DESCANSO', min: 0, max: 600, step: 5 },
+  { key: 'prepare', label: 'PREPARAR', min: 0, max: 600, step: 1 },
+  { key: 'work', label: 'EXERCÍCIO', min: 1, max: 3600, step: 1 },
+  { key: 'rest', label: 'DESCANSO (PAUSA)', min: 0, max: 600, step: 1 },
   { key: 'rounds', label: 'RONDAS', min: 1, max: 99, step: 1, count: true },
   { key: 'cycles', label: 'CICLOS', min: 1, max: 20, step: 1, count: true },
   { key: 'cycleRest', label: 'DESCANSO ENTRE CICLOS', min: 0, max: 600, step: 5 },
@@ -91,8 +91,30 @@ export function WorkoutEditModal({
 
       <div className="native-sheet-body edit-sheet-body">
         <p className="edit-intro">
-          Toque em um valor para abrir o seletor no <strong>centro da tela</strong> e deslize.
+          {mode === 'tabata' ? (
+            <>
+              Clássico: <strong>20s esforço / 10s pausa × 8 rondas</strong> (+ preparar, descanso
+              entre ciclos, cooldown). Toque num valor e deslize.
+            </>
+          ) : (
+            <>
+              Toque em um valor para abrir o seletor no <strong>centro da tela</strong> e deslize.
+            </>
+          )}
         </p>
+
+        {mode === 'tabata' ? (
+          <button
+            type="button"
+            className="edit-preset-btn"
+            onClick={() => {
+              setDraft({ ...CLASSIC_TABATA_PRESET })
+              setActiveKey(null)
+            }}
+          >
+            PRESET CLÁSSICO 20/10 × 8
+          </button>
+        ) : null}
 
         <div className="edit-rows">
           {fields.map((field) => {
