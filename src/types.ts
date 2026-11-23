@@ -21,10 +21,8 @@ export interface RoundsSettings {
   warning: number
 }
 
-export type WorkoutMusicTrack = 'off' | 'pulse' | 'drive' | 'storm'
-
-/** youtube = vídeos públicos no YouTube; beats = batidas offline do app. */
-export type WorkoutMusicMode = 'off' | 'youtube' | 'beats'
+/** Trilhas próprias do app (Web Audio) — só no Tabata. */
+export type WorkoutMusicTrack = 'pulse' | 'drive' | 'storm'
 
 export interface GeneralSettings {
   soundEffect: boolean
@@ -33,12 +31,9 @@ export interface GeneralSettings {
   voiceAssistant: boolean
   voice: 'luciana' | 'sistema'
   ducking: boolean
-  /** Fonte da música de treino. */
-  workoutMusicMode: WorkoutMusicMode
-  /** Batida offline (só quando mode === 'beats'). */
+  /** Nossa música Tabata (batidas do app). */
+  workoutMusic: boolean
   workoutMusicTrack: WorkoutMusicTrack
-  /** Id da faixa curada em youtubeTabata.ts */
-  youtubeTrackId: string
   ticking: boolean
   vibration: boolean
   flashlight: boolean
@@ -82,9 +77,8 @@ export const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   voiceAssistant: true,
   voice: 'luciana',
   ducking: true,
-  workoutMusicMode: 'youtube',
+  workoutMusic: true,
   workoutMusicTrack: 'pulse',
-  youtubeTrackId: 'songs20',
   ticking: true,
   vibration: true,
   flashlight: false,

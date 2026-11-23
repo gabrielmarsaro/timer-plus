@@ -1251,39 +1251,6 @@ button.phase-block:not(:disabled) {
   letter-spacing: 0.04em;
 }
 
-.tabata-music-link {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  margin: 0 18px 4px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: transparent;
-  border: 1px solid #2a2a2a;
-  text-align: center;
-}
-
-.tabata-music-kicker {
-  color: #ff4d4d;
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
-}
-
-.tabata-music-name {
-  color: #fff;
-  font-size: 0.95rem;
-  letter-spacing: 0.04em;
-}
-
-.app-shell.theme-light .tabata-music-link {
-  border-color: #ccc;
-}
-
-.app-shell.theme-light .tabata-music-name {
-  color: #111;
-}
-
 .edit-intro {
   margin: 14px 16px 8px;
   color: #9a9a9a;

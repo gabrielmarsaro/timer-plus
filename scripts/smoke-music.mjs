@@ -30,30 +30,33 @@ const browser = await chromium.launch({ headless: true })
 const page = await browser.newPage({ viewport: { width: 390, height: 844 } })
 await page.goto('http://127.0.0.1:5179/', { waitUntil: 'networkidle' })
 
-// Tabata-only music link on home
-const music = page.locator('.tabata-music-link')
-await music.waitFor({ state: 'visible', timeout: 3000 })
-const musicText = await music.innerText()
-if (!musicText.includes('MÚSICA NO YOUTUBE')) throw new Error('Missing Tabata music link')
-if (!musicText.includes('TABATA')) throw new Error('Expected curated track label')
-
-// No in-app YouTube dock
+// No YouTube chrome on Tabata home
+if ((await page.locator('.tabata-music-link').count()) !== 0) {
+  throw new Error('YouTube music link should be removed')
+}
 if ((await page.locator('.yt-dock').count()) !== 0) throw new Error('yt-dock should be gone')
 
 await page.getByRole('button', { name: 'Configurações', exact: true }).click()
 await page.getByRole('heading', { name: 'CONFIGURAÇÕES' }).waitFor()
 const body = await page.locator('.native-sheet-body').innerText()
-if (!body.includes('SÓ NA ABA TABATA')) throw new Error('Settings should say Tabata-only')
-await page.getByRole('button', { name: 'CONCLUÍDO' }).click()
-
-// Rondas must not show the music link
-await page.getByRole('button', { name: 'RONDAS', exact: true }).click()
-await page.waitForTimeout(200)
-if ((await page.locator('.tabata-music-link').count()) !== 0) {
-  throw new Error('Music link must not appear on Rondas')
+if (!body.includes('NOSSA MÚSICA TABATA')) throw new Error('Missing NOSSA MÚSICA TABATA')
+if (!body.includes('SEM YOUTUBE')) throw new Error('Settings should say SEM YOUTUBE')
+if (!body.includes('TABATA 160') && !body.includes('FAIXA')) {
+  throw new Error('Expected FAIXA / TABATA 160')
 }
 
-console.log(JSON.stringify({ tabataMusic: musicText.replace(/\s+/g, ' ').trim(), rondasClean: true }))
+await page.getByText('FAIXA', { exact: true }).click()
+await page.waitForTimeout(80)
+const track = await page.locator('.native-value').filter({ hasText: /HIIT|POWER|TABATA/ }).first().textContent()
+if (!track) throw new Error('Track did not cycle')
+
+await page.getByRole('button', { name: 'CONCLUÍDO' }).click()
+await page.getByRole('button', { name: 'INICIAR', exact: true }).click()
+await page.waitForTimeout(300)
+const pause = page.getByRole('button', { name: 'PAUSAR', exact: true })
+await pause.waitFor({ state: 'visible', timeout: 3000 })
+
+console.log(JSON.stringify({ track: track.trim(), tabataRunning: true, noYoutubeUi: true }))
 console.log('PASS')
 await browser.close()
 server.close()

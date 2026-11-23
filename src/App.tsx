@@ -23,7 +23,6 @@ import {
   unlockFeedback,
 } from './lib/feedback'
 import { pauseWorkoutMusic, stopWorkoutMusic, syncWorkoutMusic } from './lib/workoutMusic'
-import { getYoutubeTrack, openYoutubeExternally } from './lib/youtubeTabata'
 import { buildPhases, buildRoundsPhases } from './lib/buildPhases'
 import {
   DEFAULT_GENERAL_SETTINGS,
@@ -47,6 +46,30 @@ function loadJson<T>(key: string, fallback: T): T {
     return { ...fallback, ...JSON.parse(raw) }
   } catch {
     return fallback
+  }
+}
+
+function loadGeneralSettings(): GeneralSettings {
+  const loaded = loadJson(GENERAL_KEY, DEFAULT_GENERAL_SETTINGS) as GeneralSettings & {
+    workoutMusicMode?: string
+    workoutMusicTrack?: string
+  }
+  const legacyMode = loaded.workoutMusicMode
+  const music =
+    typeof loaded.workoutMusic === 'boolean'
+      ? loaded.workoutMusic
+      : legacyMode
+        ? legacyMode !== 'off'
+        : DEFAULT_GENERAL_SETTINGS.workoutMusic
+  const track =
+    loaded.workoutMusicTrack === 'drive' || loaded.workoutMusicTrack === 'storm'
+      ? loaded.workoutMusicTrack
+      : 'pulse'
+  return {
+    ...DEFAULT_GENERAL_SETTINGS,
+    ...loaded,
+    workoutMusic: music,
+    workoutMusicTrack: track,
   }
 }
 
@@ -75,7 +98,7 @@ export default function App() {
     loadJson(ROUNDS_KEY, DEFAULT_ROUNDS_SETTINGS),
   )
   const [generalSettings, setGeneralSettings] = useState<GeneralSettings>(() =>
-    loadJson(GENERAL_KEY, DEFAULT_GENERAL_SETTINGS),
+    loadGeneralSettings(),
   )
   const [generalOpen, setGeneralOpen] = useState(false)
   const [workoutEditOpen, setWorkoutEditOpen] = useState(false)
@@ -162,27 +185,17 @@ export default function App() {
     void lockOrientation(generalSettings.rotation)
   }, [generalSettings])
 
+  // Nossa música Tabata — só na aba Tabata.
   useEffect(() => {
-    const timer = tab === 'rounds' ? rounds : tabata
-    const phase = tab === 'stopwatch' || tab === 'more' ? null : timer.currentPhase
-    const running =
-      tab === 'tabata'
-        ? tabata.status === 'running'
-        : tab === 'rounds'
-          ? rounds.status === 'running'
-          : false
-    syncWorkoutMusic(phase, running)
-    if (!running && (tab === 'tabata' || tab === 'rounds')) {
-      if (timer.status === 'paused') pauseWorkoutMusic()
-      if (timer.status === 'idle') stopWorkoutMusic()
+    if (tab !== 'tabata') {
+      stopWorkoutMusic()
+      return
     }
-  }, [
-    tab,
-    tabata.status,
-    tabata.currentPhase,
-    rounds.status,
-    rounds.currentPhase,
-  ])
+    const running = tabata.status === 'running'
+    syncWorkoutMusic(tabata.currentPhase, running)
+    if (tabata.status === 'paused') pauseWorkoutMusic()
+    if (tabata.status === 'idle') stopWorkoutMusic()
+  }, [tab, tabata.status, tabata.currentPhase])
 
   useEffect(() => {
     const warmVoices = () => {
@@ -242,11 +255,6 @@ export default function App() {
       void timer.start()
     }
 
-  const openTabataYoutube = () => {
-    unlockFeedback()
-    openYoutubeExternally(getYoutubeTrack(generalSettings.youtubeTrackId).videoId)
-  }
-
   const toggleStopwatch = () => {
     unlockFeedback()
     if (stopwatch.status === 'running') {
@@ -272,11 +280,6 @@ export default function App() {
     (tab === 'tabata' && tabata.status !== 'idle') ||
     (tab === 'rounds' && rounds.status !== 'idle')
 
-  const tabataYoutube =
-    generalSettings.workoutMusicMode === 'youtube'
-      ? getYoutubeTrack(generalSettings.youtubeTrackId)
-      : null
-
   return (
     <div
       className={`app-shell${screenFlash ? ' is-flashing' : ''}${
@@ -297,8 +300,6 @@ export default function App() {
             cyclesLeft={tabata.cyclesLeft}
             idleWorkDuration={tabataSettings.work}
             timeFormat={generalSettings.timeFormat}
-            musicTrackLabel={tabataYoutube?.label ?? null}
-            onOpenMusic={tabataYoutube ? openTabataYoutube : undefined}
             onOpenGeneralSettings={() => setGeneralOpen(true)}
             onOpenWorkoutEdit={() => setWorkoutEditOpen(true)}
             onToggle={makeToggle(tabata)}

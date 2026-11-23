@@ -10,17 +10,17 @@ interface TrackProfile {
   swing: number
 }
 
+/** Trilhas próprias do Timer Plus — geradas no aparelho (Web Audio). */
 export const WORKOUT_TRACKS: Array<{ id: WorkoutTrack; label: string }> = [
-  { id: 'pulse', label: 'PULSE 160' },
-  { id: 'drive', label: 'DRIVE 140' },
-  { id: 'storm', label: 'STORM 150' },
-  { id: 'off', label: 'DESLIGADA' },
+  { id: 'pulse', label: 'TABATA 160' },
+  { id: 'drive', label: 'HIIT 140' },
+  { id: 'storm', label: 'POWER 150' },
 ]
 
-const PROFILES: Record<Exclude<WorkoutTrack, 'off'>, TrackProfile> = {
-  pulse: { label: 'PULSE', bpm: 160, swing: 0 },
-  drive: { label: 'DRIVE', bpm: 140, swing: 0.08 },
-  storm: { label: 'STORM', bpm: 150, swing: 0.03 },
+const PROFILES: Record<WorkoutTrack, TrackProfile> = {
+  pulse: { label: 'TABATA', bpm: 160, swing: 0 },
+  drive: { label: 'HIIT', bpm: 140, swing: 0.06 },
+  storm: { label: 'POWER', bpm: 150, swing: 0.02 },
 }
 
 const AudioCtxCtor =
@@ -46,9 +46,7 @@ const SCHEDULE_AHEAD = 0.12
 export function configureWorkoutMusic(next: GeneralSettings): void {
   settings = next
   track = next.workoutMusicTrack
-  if (next.workoutMusicMode !== 'beats' || next.workoutMusicTrack === 'off') {
-    stopWorkoutMusic()
-  }
+  if (!next.workoutMusic) stopWorkoutMusic()
 }
 
 export function bindWorkoutAudioContext(ctx: AudioContext): void {
@@ -81,7 +79,7 @@ function setMasterGain(level: number, when = 0): void {
   if (!ctx || !master) return
   const t = Math.max(ctx.currentTime, when)
   master.gain.cancelScheduledValues(t)
-  master.gain.setTargetAtTime(level, t, 0.04)
+  master.gain.setTargetAtTime(level, t, 0.05)
 }
 
 function intensityForPhase(kind: PhaseKind | undefined): MusicIntensity {
@@ -95,111 +93,140 @@ function intensityForPhase(kind: PhaseKind | undefined): MusicIntensity {
 
 function targetGain(level: MusicIntensity): number {
   const vol = Math.max(0.05, settings?.volume ?? 0.8)
-  if (level === 'high') return 0.2 * vol
-  if (level === 'low') return 0.07 * vol
+  if (level === 'high') return 0.24 * vol
+  if (level === 'low') return 0.08 * vol
   return 0
 }
 
-function playKick(ctx: AudioContext, time: number, gain: GainNode): void {
+function playKick(ctx: AudioContext, time: number, gain: GainNode, hard: boolean): void {
   const osc = ctx.createOscillator()
   const g = ctx.createGain()
   osc.type = 'sine'
-  osc.frequency.setValueAtTime(150, time)
-  osc.frequency.exponentialRampToValueAtTime(45, time + 0.12)
-  g.gain.setValueAtTime(1, time)
-  g.gain.exponentialRampToValueAtTime(0.001, time + 0.18)
+  osc.frequency.setValueAtTime(hard ? 170 : 140, time)
+  osc.frequency.exponentialRampToValueAtTime(42, time + 0.14)
+  g.gain.setValueAtTime(hard ? 1 : 0.75, time)
+  g.gain.exponentialRampToValueAtTime(0.001, time + (hard ? 0.2 : 0.15))
   osc.connect(g)
   g.connect(gain)
   osc.start(time)
-  osc.stop(time + 0.2)
+  osc.stop(time + 0.22)
 }
 
-function playSnare(ctx: AudioContext, time: number, gain: GainNode, bright: boolean): void {
-  const size = Math.floor(ctx.sampleRate * 0.12)
+function playNoiseHit(
+  ctx: AudioContext,
+  time: number,
+  gain: GainNode,
+  opts: { dur: number; freq: number; vol: number; type: BiquadFilterType },
+): void {
+  const size = Math.floor(ctx.sampleRate * opts.dur)
   const buffer = ctx.createBuffer(1, size, ctx.sampleRate)
   const data = buffer.getChannelData(0)
   for (let i = 0; i < size; i += 1) {
-    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / size, 2.2)
+    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / size, 1.8)
   }
   const noise = ctx.createBufferSource()
   noise.buffer = buffer
   const filter = ctx.createBiquadFilter()
-  filter.type = 'bandpass'
-  filter.frequency.value = bright ? 2200 : 1400
+  filter.type = opts.type
+  filter.frequency.value = opts.freq
   const g = ctx.createGain()
-  g.gain.setValueAtTime(0.55, time)
-  g.gain.exponentialRampToValueAtTime(0.001, time + 0.12)
+  g.gain.setValueAtTime(opts.vol, time)
+  g.gain.exponentialRampToValueAtTime(0.001, time + opts.dur)
   noise.connect(filter)
   filter.connect(g)
   g.connect(gain)
   noise.start(time)
-  noise.stop(time + 0.13)
+  noise.stop(time + opts.dur + 0.01)
+}
+
+function playSnare(ctx: AudioContext, time: number, gain: GainNode): void {
+  playNoiseHit(ctx, time, gain, { dur: 0.11, freq: 1800, vol: 0.5, type: 'bandpass' })
+  const osc = ctx.createOscillator()
+  const g = ctx.createGain()
+  osc.type = 'triangle'
+  osc.frequency.setValueAtTime(220, time)
+  g.gain.setValueAtTime(0.22, time)
+  g.gain.exponentialRampToValueAtTime(0.001, time + 0.08)
+  osc.connect(g)
+  g.connect(gain)
+  osc.start(time)
+  osc.stop(time + 0.09)
 }
 
 function playHat(ctx: AudioContext, time: number, gain: GainNode, open: boolean): void {
-  const size = Math.floor(ctx.sampleRate * (open ? 0.08 : 0.03))
-  const buffer = ctx.createBuffer(1, size, ctx.sampleRate)
-  const data = buffer.getChannelData(0)
-  for (let i = 0; i < size; i += 1) data[i] = Math.random() * 2 - 1
-  const noise = ctx.createBufferSource()
-  noise.buffer = buffer
-  const filter = ctx.createBiquadFilter()
-  filter.type = 'highpass'
-  filter.frequency.value = 7000
-  const g = ctx.createGain()
-  g.gain.setValueAtTime(open ? 0.22 : 0.12, time)
-  g.gain.exponentialRampToValueAtTime(0.001, time + (open ? 0.08 : 0.03))
-  noise.connect(filter)
-  filter.connect(g)
-  g.connect(gain)
-  noise.start(time)
-  noise.stop(time + (open ? 0.09 : 0.035))
+  playNoiseHit(ctx, time, gain, {
+    dur: open ? 0.07 : 0.025,
+    freq: 7500,
+    vol: open ? 0.2 : 0.11,
+    type: 'highpass',
+  })
 }
 
 function playBass(ctx: AudioContext, time: number, gain: GainNode, freq: number): void {
   const osc = ctx.createOscillator()
   const g = ctx.createGain()
-  osc.type = 'triangle'
+  osc.type = 'sawtooth'
   osc.frequency.setValueAtTime(freq, time)
-  g.gain.setValueAtTime(0.28, time)
-  g.gain.exponentialRampToValueAtTime(0.001, time + 0.16)
+  const filter = ctx.createBiquadFilter()
+  filter.type = 'lowpass'
+  filter.frequency.setValueAtTime(420, time)
+  filter.frequency.exponentialRampToValueAtTime(120, time + 0.18)
+  g.gain.setValueAtTime(0.18, time)
+  g.gain.exponentialRampToValueAtTime(0.001, time + 0.2)
+  osc.connect(filter)
+  filter.connect(g)
+  g.connect(gain)
+  osc.start(time)
+  osc.stop(time + 0.22)
+}
+
+function playStab(ctx: AudioContext, time: number, gain: GainNode, freq: number): void {
+  const osc = ctx.createOscillator()
+  const g = ctx.createGain()
+  osc.type = 'square'
+  osc.frequency.setValueAtTime(freq, time)
+  g.gain.setValueAtTime(0.08, time)
+  g.gain.exponentialRampToValueAtTime(0.001, time + 0.09)
   osc.connect(g)
   g.connect(gain)
   osc.start(time)
-  osc.stop(time + 0.18)
+  osc.stop(time + 0.1)
 }
 
 function scheduleStep(ctx: AudioContext, time: number, currentStep: number): void {
-  if (track === 'off' || intensity === 'off') return
+  if (intensity === 'off') return
   const profile = PROFILES[track]
   const dest = ensureMaster(ctx)
   const beat = currentStep % 16
-  const swung =
-    time + ((beat % 2 === 1 ? profile.swing : 0) * (60 / profile.bpm) * 0.25)
+  const swung = time + ((beat % 2 === 1 ? profile.swing : 0) * (60 / profile.bpm) * 0.25)
+  const work = intensity === 'high'
 
-  // Four-on-the-floor / backbeat depending on track
   if (track === 'pulse') {
-    if (beat % 4 === 0) playKick(ctx, swung, dest)
-    if (beat === 4 || beat === 12) playSnare(ctx, swung, dest, true)
-    if (beat % 2 === 0) playHat(ctx, swung, dest, beat % 8 === 6)
+    // Classic Tabata four-on-the-floor @ 160
+    if (beat % 4 === 0) playKick(ctx, swung, dest, work && beat === 0)
+    if (beat === 4 || beat === 12) playSnare(ctx, swung, dest)
+    if (work || beat % 2 === 0) playHat(ctx, swung, dest, beat % 8 === 6)
     if (beat % 8 === 0) playBass(ctx, swung, dest, beat % 16 === 0 ? 55 : 73)
+    if (work && (beat === 0 || beat === 8)) playStab(ctx, swung, dest, beat === 0 ? 220 : 247)
   } else if (track === 'drive') {
-    if (beat === 0 || beat === 6 || beat === 10) playKick(ctx, swung, dest)
-    if (beat === 4 || beat === 12) playSnare(ctx, swung, dest, false)
-    playHat(ctx, swung, dest, beat % 4 === 3)
+    if (beat === 0 || beat === 6 || beat === 10) playKick(ctx, swung, dest, beat === 0)
+    if (beat === 4 || beat === 12) playSnare(ctx, swung, dest)
+    playHat(ctx, swung, dest, work && beat % 4 === 3)
     if (beat === 0 || beat === 8) playBass(ctx, swung, dest, beat === 0 ? 49 : 65)
+    if (work && beat % 4 === 2) playStab(ctx, swung, dest, 165)
   } else {
-    // storm
-    if (beat % 4 === 0 || beat === 6) playKick(ctx, swung, dest)
-    if (beat === 4 || beat === 12) playSnare(ctx, swung, dest, true)
-    if (beat % 2 === 1) playHat(ctx, swung, dest, false)
+    // storm / power
+    if (beat % 4 === 0 || (work && beat === 6)) playKick(ctx, swung, dest, beat % 8 === 0)
+    if (beat === 4 || beat === 12) playSnare(ctx, swung, dest)
+    if (beat % 2 === 1 || work) playHat(ctx, swung, dest, false)
     if (beat % 4 === 0) playBass(ctx, swung, dest, beat % 8 === 0 ? 61 : 82)
+    if (work && beat === 0) playStab(ctx, swung, dest, 277)
   }
 }
 
 function scheduler(): void {
   const ctx = getCtx()
-  if (!ctx || !running || track === 'off' || intensity === 'off') return
+  if (!ctx || !running || intensity === 'off') return
   if (externalBlocked) return
   const profile = PROFILES[track]
   const secondsPerStep = 60 / profile.bpm / 4
@@ -248,17 +275,12 @@ export function pauseWorkoutMusic(): void {
 
 export function setExternalMusicBlocked(blocked: boolean): void {
   externalBlocked = blocked
-  if (blocked) {
-    pauseWorkoutMusic()
-  }
+  if (blocked) pauseWorkoutMusic()
 }
 
+/** Só chama quando o Tabata está a correr. */
 export function syncWorkoutMusic(phase: Phase | null, isRunning: boolean): void {
-  if (
-    settings?.workoutMusicMode !== 'beats' ||
-    settings.workoutMusicTrack === 'off' ||
-    !isRunning
-  ) {
+  if (!settings?.workoutMusic || !isRunning) {
     stopWorkoutMusic()
     return
   }
@@ -279,12 +301,7 @@ export function syncWorkoutMusic(phase: Phase | null, isRunning: boolean): void 
   setMasterGain(targetGain(next))
 }
 
-/** Short preview from settings (must be called after unlockFeedback). */
 export function previewWorkoutTrack(nextTrack: WorkoutTrack): void {
-  if (nextTrack === 'off') {
-    stopWorkoutMusic()
-    return
-  }
   track = nextTrack
   intensity = 'high'
   externalBlocked = false
@@ -292,15 +309,11 @@ export function previewWorkoutTrack(nextTrack: WorkoutTrack): void {
   setMasterGain(targetGain('high'))
   window.setTimeout(() => {
     stopWorkoutMusic()
-  }, 1800)
+  }, 2000)
 }
 
 export function isWorkoutMusicAudible(): boolean {
   return Boolean(
-    settings?.workoutMusicMode === 'beats' &&
-      settings.workoutMusicTrack !== 'off' &&
-      running &&
-      intensity !== 'off' &&
-      !externalBlocked,
+    settings?.workoutMusic && running && intensity !== 'off' && !externalBlocked,
   )
 }
