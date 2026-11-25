@@ -1,12 +1,12 @@
 {
-  "name": "Timer Plus",
-  "short_name": "Timer Plus",
-  "description": "Timer de treino HIIT e Tabata",
+  "name": "Timer Viking",
+  "short_name": "Viking",
+  "description": "Timer Viking — treino HIIT, Tabata e rondas",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "background_color": "#0B0E12",
+  "theme_color": "#0B0E12",
   "orientation": "any",
   "icons": [
     {

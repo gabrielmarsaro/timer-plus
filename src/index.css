@@ -1,17 +1,18 @@
 :root {
   color-scheme: dark;
-  --bg: #000000;
-  --yellow: #f5e600;
-  --green: #b6ff3c;
-  --accent: #b6ff3c;
-  --blue: #5eb8ff;
-  --text: #ffffff;
-  --muted: #9a9a9a;
-  --panel: #141414;
-  --border: #2a2a2a;
+  /* Timer Viking — forja nórdica */
+  --bg: #0b0e12;
+  --yellow: #e8d5a3;
+  --green: #d4a017;
+  --accent: #d4a017;
+  --blue: #6ec6d4;
+  --text: #f2ede4;
+  --muted: #8b93a7;
+  --panel: #151a24;
+  --border: #2a3344;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --nav-height: 72px;
-  font-family: 'Oswald', Impact, 'Arial Narrow', sans-serif;
+  font-family: 'Barlow Condensed', 'Arial Narrow', Impact, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -388,7 +389,7 @@ button.phase-block:not(:disabled) {
   color: #111;
   display: grid;
   place-items: center;
-  box-shadow: 0 0 0 3px #000, 0 0 0 5px var(--yellow);
+  box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--accent);
 }
 
 .play-btn svg {
@@ -417,7 +418,7 @@ button.phase-block:not(:disabled) {
   padding: 8px 8px calc(10px + var(--safe-bottom));
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  background: #000;
+  background: var(--bg);
   border-top: 1px solid #151515;
   transition: transform 320ms ease, opacity 240ms ease;
 }
@@ -502,18 +503,18 @@ button.phase-block:not(:disabled) {
   justify-content: center;
   padding: 18px 16px 8px;
   min-height: 180px;
-  background: linear-gradient(180deg, #121212 0%, #000 100%);
+  background: linear-gradient(180deg, #151a24 0%, var(--bg) 100%);
 }
 
 .stopwatch-screen.is-live .stopwatch-stage {
-  background: linear-gradient(180deg, #1a2208 0%, #000 70%);
+  background: linear-gradient(180deg, #2a2208 0%, var(--bg) 70%);
 }
 
 .stopwatch-time {
   margin: 0 auto;
   min-width: 9.2ch;
   text-align: center;
-  font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: clamp(3.4rem, 14vw, 5.4rem);
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -601,7 +602,7 @@ button.phase-block:not(:disabled) {
 
 .lap-split {
   text-align: center;
-  font-family: 'Roboto Mono', ui-monospace, Menlo, Consolas, monospace;
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
   font-size: 1.05rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -610,7 +611,7 @@ button.phase-block:not(:disabled) {
 
 .lap-total {
   text-align: right;
-  font-family: 'Roboto Mono', ui-monospace, Menlo, Consolas, monospace;
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
   font-size: 0.92rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -637,6 +638,14 @@ button.phase-block:not(:disabled) {
 .more-header {
   padding: 18px 16px 10px;
   text-align: center;
+}
+
+.brand-mark {
+  margin: 0 0 6px;
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
 }
 
 .more-header h1 {
@@ -906,8 +915,8 @@ button.phase-block:not(:disabled) {
 
   body {
     background:
-      radial-gradient(circle at top, #1a1a1a 0%, #000 55%),
-      #000;
+      radial-gradient(circle at top, #1a2030 0%, var(--bg) 55%),
+      var(--bg);
   }
 
   .app-shell {
@@ -1067,12 +1076,12 @@ button.phase-block:not(:disabled) {
   }
 }
 
-/* Folhas nativas estilo Timer Plus */
+/* Folhas nativas estilo Timer Viking */
 .native-sheet {
   position: fixed;
   inset: 0;
   z-index: 50;
-  background: #000;
+  background: var(--bg);
   display: flex;
   flex-direction: column;
   max-width: 480px;
@@ -1259,6 +1268,24 @@ button.phase-block:not(:disabled) {
   line-height: 1.35;
 }
 
+.edit-preset-btn {
+  margin: 4px 16px 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #333;
+  background: #141414;
+  color: var(--accent);
+  font-size: 0.92rem;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+.app-shell.theme-light .edit-preset-btn {
+  background: #fff;
+  border-color: #ccc;
+  color: #111;
+}
+
 .edit-intro strong {
   color: var(--accent);
 }
@@ -1358,15 +1385,20 @@ button.phase-block:not(:disabled) {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+  width: 100%;
+  min-width: 0;
 }
 
 .wheel {
   position: relative;
   border-radius: 16px;
   overflow: hidden;
-  background: #111;
-  border: 1px solid #222;
+  background: var(--panel);
+  border: 1px solid var(--border);
   touch-action: pan-y;
+  overscroll-behavior: contain;
+  min-width: 0;
+  width: 100%;
 }
 
 .wheel-highlight {
@@ -1378,22 +1410,28 @@ button.phase-block:not(:disabled) {
   height: 40px;
   transform: translateY(-50%);
   border-radius: 10px;
-  border: 1px solid rgba(182, 255, 60, 0.35);
-  background: rgba(182, 255, 60, 0.08);
+  border: 1px solid rgba(212, 160, 23, 0.4);
+  background: rgba(212, 160, 23, 0.1);
   z-index: 2;
 }
 
 .wheel-scroller {
   height: 100%;
+  width: 100%;
+  overflow-x: hidden;
   overflow-y: auto;
   scroll-snap-type: y mandatory;
+  overscroll-behavior-y: contain;
+  overscroll-behavior-x: none;
+  /* Pointer handler owns vertical scroll so the column stays on-axis. */
+  touch-action: none;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   mask-image: linear-gradient(
     to bottom,
     transparent 0%,
-    #000 18%,
-    #000 82%,
+    var(--bg) 18%,
+    var(--bg) 82%,
     transparent 100%
   );
 }
@@ -1405,18 +1443,42 @@ button.phase-block:not(:disabled) {
 .wheel-item {
   display: grid;
   place-items: center;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
   scroll-snap-align: center;
+  scroll-snap-stop: always;
   color: #666;
   font-size: 1.15rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
-  transition: color 120ms ease, transform 120ms ease;
+  transition: color 120ms ease;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+  /* No scale() — it makes the column feel “loose” / off-axis while scrolling. */
+}
+
+.wheel-item-label {
+  display: block;
+  width: 100%;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-inline: 6px;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.wheel-scroller:focus {
+  outline: none;
 }
 
 .wheel-item.is-active {
   color: #fff;
-  transform: scale(1.08);
+  font-size: 1.22rem;
 }
 
 .stat-spacer {
