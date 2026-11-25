@@ -1,5 +1,6 @@
 import { formatTime, type TimeFormat } from '../lib/format'
 import type { TimerStatus } from '../hooks/usePhaseTimer'
+import { PHASE_COLORS } from '../types'
 import type { Phase } from '../types'
 import {
   GearIcon,
@@ -49,13 +50,13 @@ export function TabataScreen({
       ? {
           label: 'PREPARAR',
           time: formatTime(phaseRemaining, timeFormat),
-          color: '#f5e600',
+          color: PHASE_COLORS.prepare,
           key: 'idle-prepare',
         }
       : {
           label: currentPhase?.label ?? 'PREPARAR',
           time: formatTime(phaseRemaining, timeFormat),
-          color: currentPhase?.color ?? '#f5e600',
+          color: currentPhase?.color ?? PHASE_COLORS.prepare,
           key: [
             currentPhase?.kind ?? 'prepare',
             currentPhase?.round ?? 0,
@@ -68,7 +69,7 @@ export function TabataScreen({
       ? {
           label: 'EXERCÍCIO',
           time: formatTime(idleWorkDuration, timeFormat),
-          color: '#9dff4a',
+          color: PHASE_COLORS.work,
         }
       : nextPhase
         ? {
@@ -79,7 +80,7 @@ export function TabataScreen({
         : {
             label: 'FIM',
             time: formatTime(0, timeFormat),
-            color: '#333333',
+            color: PHASE_COLORS.done,
           }
 
   const isRunning = status === 'running'

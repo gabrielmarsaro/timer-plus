@@ -13,14 +13,14 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## iPhone (Safari)
 
-**https://refined-blaze-8vk4u45.shipstatic.com/**
+**https://magnetic-lens-tae2w8t.shipstatic.com/**
 
 1. Abra no **Safari**.  
 2. Desative o **mute lateral** se quiser alertas sonoros.  
 3. Toque **INICIAR** — o tempo aparece em **A reproduzir** na tela bloqueada.  
 4. **Compartilhar** → **Adicionar à Tela de Início**.
 
-## Android (APK) — versão **1.5.0**
+## Android (APK) — versão **1.5.1**
 
 **https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/0fca3ef10e07b983b43e7c5f4da61ee4a98e76d2/releases/timer-plus-debug.apk**
 
@@ -30,7 +30,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
 
-Página de download: https://refined-blaze-8vk4u45.shipstatic.com/baixar.html
+Página de download: https://magnetic-lens-tae2w8t.shipstatic.com/baixar.html
 
 ## Identidade
 
