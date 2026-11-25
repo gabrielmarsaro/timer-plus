@@ -333,7 +333,7 @@ export default function App() {
       style: generalSettings.lightColors ? Style.Light : Style.Dark,
     })
     void StatusBar.setBackgroundColor({
-      color: generalSettings.lightColors ? '#f4f4f4' : '#000000',
+      color: generalSettings.lightColors ? '#f4f4f4' : '#0B0E12',
     })
   }, [generalSettings.lightColors])
 

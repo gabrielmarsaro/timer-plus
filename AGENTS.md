@@ -1,4 +1,4 @@
-# Timer Plus — agent rules
+# Timer Viking — agent rules
 
 ## Always ship to every platform
 

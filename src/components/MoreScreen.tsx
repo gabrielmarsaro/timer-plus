@@ -17,6 +17,7 @@ export function MoreScreen({
   return (
     <section className="more-screen">
       <header className="more-header">
+        <p className="brand-mark">TIMER VIKING</p>
         <h1>MAIS</h1>
         <p>Atalhos, instalação e dicas</p>
       </header>

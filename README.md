@@ -1,4 +1,4 @@
-# Timer Plus
+# Timer Viking
 
 Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
@@ -13,16 +13,16 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## iPhone (Safari)
 
-**https://dreamy-lens-j3fuq97.shipstatic.com/**
+**https://refined-blaze-8vk4u45.shipstatic.com/**
 
 1. Abra no **Safari**.  
-2. Desative o **mute lateral** e aumente o volume.  
+2. Desative o **mute lateral** se quiser alertas sonoros.  
 3. Toque **INICIAR** — o tempo aparece em **A reproduzir** na tela bloqueada.  
 4. **Compartilhar** → **Adicionar à Tela de Início**.
 
-## Android (APK) — versão **1.4.2**
+## Android (APK) — versão **1.5.0**
 
-**https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/e4b0359aeb63704124bc7bfad3120f25f333bba0/releases/timer-plus-debug.apk**
+**https://github.com/gabrielmarsaro/timer-plus/raw/main/releases/timer-plus-debug.apk**
 
 1. Baixe no Chrome.  
 2. Permita **fontes desconhecidas** se pedir.  
@@ -30,7 +30,11 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
 
-Página de download: https://dreamy-lens-j3fuq97.shipstatic.com/baixar.html
+Página de download: https://refined-blaze-8vk4u45.shipstatic.com/baixar.html
+
+## Identidade
+
+**Timer Viking** — forja nórdica: carvão, ouro no esforço, gelo no descanso.
 
 ## Tabata (protocolo)
 
@@ -40,7 +44,7 @@ No editor: botão **PRESET CLÁSSICO 20/10 × 8**.
 ## Música Tabata
 
 Trilha **própria** (só na aba Tabata): **TABATA 160** / **HIIT 140** / **POWER 150**.  
-A batida muda por fase (preparar, esforço, pausa, entre ciclos, cooldown), com cues **GO / REST** e **3-2-1**.
+A batida muda por fase, com cues **GO / REST** e **3-2-1**.
 
 ## Entrega em todas as plataformas
 
@@ -57,4 +61,6 @@ npm run smoke
 node scripts/smoke-focus.mjs
 node scripts/smoke-stopwatch.mjs
 node scripts/smoke-music.mjs
+node scripts/smoke-lockscreen.mjs
+node scripts/smoke-wheel.mjs
 ```

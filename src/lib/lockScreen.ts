@@ -79,17 +79,24 @@ function ensureArtwork(): string {
     canvas.height = 512
     const ctx = canvas.getContext('2d')
     if (!ctx) return ''
-    ctx.fillStyle = '#0a0a0a'
+    ctx.fillStyle = '#0B0E12'
     ctx.fillRect(0, 0, 512, 512)
-    ctx.fillStyle = '#b6ff3c'
+    ctx.fillStyle = '#D4A017'
     ctx.beginPath()
-    ctx.arc(256, 256, 180, 0, Math.PI * 2)
+    // Shield silhouette
+    ctx.moveTo(256, 64)
+    ctx.lineTo(400, 120)
+    ctx.lineTo(400, 280)
+    ctx.quadraticCurveTo(400, 380, 256, 448)
+    ctx.quadraticCurveTo(112, 380, 112, 280)
+    ctx.lineTo(112, 120)
+    ctx.closePath()
     ctx.fill()
-    ctx.fillStyle = '#111'
-    ctx.font = 'bold 120px system-ui, sans-serif'
+    ctx.fillStyle = '#0B0E12'
+    ctx.font = 'bold 110px system-ui, sans-serif'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillText('TP', 256, 268)
+    ctx.fillText('TV', 256, 268)
     artworkUrl = canvas.toDataURL('image/png')
     return artworkUrl
   } catch {
@@ -117,16 +124,16 @@ function buildLabels(payload: LockScreenPayload): { title: string; artist: strin
   if (payload.mode === 'stopwatch') {
     return {
       title: timeText,
-      artist: 'Cronómetro · Timer Plus',
-      album: 'Timer Plus',
+      artist: 'Cronómetro · Timer Viking',
+      album: 'Timer Viking',
     }
   }
 
-  const phase = payload.phaseLabel || 'Timer Plus'
+  const phase = payload.phaseLabel || 'Timer Viking'
   // Time first — lock screen Now Playing shows title largest on iPhone.
   return {
     title: `${timeText} · ${phase}`,
-    artist: payload.paused ? 'Pausado · Timer Plus' : 'Timer Plus',
+    artist: payload.paused ? 'Pausado · Timer Viking' : 'Timer Viking',
     album: payload.mode === 'tabata' ? 'Tabata' : 'Rondas',
   }
 }
