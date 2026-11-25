@@ -35,6 +35,9 @@ if (media.audioPaused !== false) {
 if (!media.audioSrc || !/lock-keepalive\.wav/.test(media.audioSrc)) {
   throw new Error(`Expected lock-keepalive.wav src, got ${media.audioSrc}`)
 }
+if (media.audioVolume !== 0) {
+  throw new Error(`Keep-alive should be silent (volume 0), got ${media.audioVolume}`)
+}
 
 const before = await page.evaluate(() => {
   const t = document.querySelector('.phase-time')

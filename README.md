@@ -20,7 +20,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 3. Toque **INICIAR** — o tempo aparece em **A reproduzir** na tela bloqueada.  
 4. **Compartilhar** → **Adicionar à Tela de Início**.
 
-## Android (APK) — versão **1.4.1**
+## Android (APK) — versão **1.4.2**
 
 **https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/d8bccc77401c8c918c342ea066362f52efd76a28/releases/timer-plus-debug.apk**
 

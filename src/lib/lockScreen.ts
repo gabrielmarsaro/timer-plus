@@ -4,9 +4,9 @@ import { formatTime } from './format'
 /**
  * iPhone Safari / PWA Now Playing + Android Capgo MediaSession.
  *
- * Safari only surfaces lock-screen controls when an HTMLAudioElement is
- * actually playing non-silent audio with audioSession type "playback".
- * A data-URI silent loop is ignored — we use public/lock-keepalive.wav.
+ * Safari needs a playing HTMLAudioElement (with audioSession "playback") to
+ * keep Now Playing on the lock screen. We loop lock-keepalive.wav at volume 0
+ * so there is no audible hum — Media Session metadata still carries the time.
  */
 
 const KEEP_ALIVE_SRC = `${import.meta.env.BASE_URL}lock-keepalive.wav`
@@ -53,8 +53,8 @@ function ensureAudio(): HTMLAudioElement | null {
     const el = new Audio(KEEP_ALIVE_SRC)
     el.loop = true
     el.preload = 'auto'
-    // Soft but non-zero — iOS drops muted/silent streams from Now Playing.
-    el.volume = 0.12
+    // Volume 0 = inaudible. Do not set muted=true — that drops Now Playing on iOS.
+    el.volume = 0
     el.muted = false
     el.setAttribute('playsinline', 'true')
     el.setAttribute('webkit-playsinline', 'true')
