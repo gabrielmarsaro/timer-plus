@@ -13,7 +13,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## iPhone (Safari)
 
-**https://driven-dome-3593tab.shipstatic.com/**
+**https://dreamy-lens-j3fuq97.shipstatic.com/**
 
 1. Abra no **Safari**.  
 2. Desative o **mute lateral** e aumente o volume.  
@@ -22,7 +22,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## Android (APK) — versão **1.4.2**
 
-**https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/d8bccc77401c8c918c342ea066362f52efd76a28/releases/timer-plus-debug.apk**
+**https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/e4b0359aeb63704124bc7bfad3120f25f333bba0/releases/timer-plus-debug.apk**
 
 1. Baixe no Chrome.  
 2. Permita **fontes desconhecidas** se pedir.  
@@ -30,7 +30,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
 
-Página de download: https://driven-dome-3593tab.shipstatic.com/baixar.html
+Página de download: https://dreamy-lens-j3fuq97.shipstatic.com/baixar.html
 
 ## Tabata (protocolo)
 
