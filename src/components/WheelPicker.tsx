@@ -20,6 +20,9 @@ export function WheelPicker({
 }: WheelPickerProps) {
   const scrollerRef = useRef<HTMLDivElement>(null)
   const frameRef = useRef(0)
+  const draggingRef = useRef(false)
+  const startYRef = useRef(0)
+  const startScrollRef = useRef(0)
   const padding = ((VISIBLE - 1) / 2) * ITEM_HEIGHT
 
   const index = useMemo(() => {
@@ -39,7 +42,7 @@ export function WheelPicker({
 
   useEffect(() => {
     const node = scrollerRef.current
-    if (!node) return
+    if (!node || draggingRef.current) return
     const top = index * ITEM_HEIGHT
     if (Math.abs(node.scrollTop - top) > 1) {
       node.scrollTop = top
@@ -55,6 +58,59 @@ export function WheelPicker({
     if (next !== undefined && next !== value) onChange(next)
     node.scrollTo({ top: clamped * ITEM_HEIGHT, behavior: 'smooth' })
   }
+
+  useEffect(() => {
+    const node = scrollerRef.current
+    if (!node) return
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return
+      draggingRef.current = true
+      startYRef.current = event.clientY
+      startScrollRef.current = node.scrollTop
+      node.setPointerCapture(event.pointerId)
+    }
+
+    const onPointerMove = (event: PointerEvent) => {
+      if (!draggingRef.current) return
+      // Force vertical-only scroll — ignores horizontal drift from finger/stylus.
+      event.preventDefault()
+      const dy = event.clientY - startYRef.current
+      node.scrollTop = startScrollRef.current - dy
+    }
+
+    const onPointerUp = (event: PointerEvent) => {
+      if (!draggingRef.current) return
+      draggingRef.current = false
+      try {
+        node.releasePointerCapture(event.pointerId)
+      } catch {
+        // already released
+      }
+      emitNearest()
+    }
+
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault()
+      node.scrollTop += event.deltaY
+      cancelAnimationFrame(frameRef.current)
+      frameRef.current = requestAnimationFrame(() => emitNearest())
+    }
+
+    node.addEventListener('pointerdown', onPointerDown)
+    node.addEventListener('pointermove', onPointerMove, { passive: false })
+    node.addEventListener('pointerup', onPointerUp)
+    node.addEventListener('pointercancel', onPointerUp)
+    node.addEventListener('wheel', onWheel, { passive: false })
+
+    return () => {
+      node.removeEventListener('pointerdown', onPointerDown)
+      node.removeEventListener('pointermove', onPointerMove)
+      node.removeEventListener('pointerup', onPointerUp)
+      node.removeEventListener('pointercancel', onPointerUp)
+      node.removeEventListener('wheel', onWheel)
+    }
+  }, [onChange, value, values.length])
 
   return (
     <div className="wheel" style={{ height: VISIBLE * ITEM_HEIGHT }}>
@@ -77,8 +133,6 @@ export function WheelPicker({
             if (next !== undefined && next !== value) onChange(next)
           })
         }}
-        onTouchEnd={emitNearest}
-        onMouseUp={emitNearest}
         onKeyDown={(event) => {
           if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
             event.preventDefault()
@@ -88,7 +142,7 @@ export function WheelPicker({
           }
         }}
       >
-        <div style={{ height: padding }} />
+        <div style={{ height: padding }} aria-hidden />
         {values.map((item) => (
           <div
             key={item}
@@ -98,10 +152,10 @@ export function WheelPicker({
             className={`wheel-item${item === value ? ' is-active' : ''}`}
             style={{ height: ITEM_HEIGHT }}
           >
-            {format(item)}
+            <span className="wheel-item-label">{format(item)}</span>
           </div>
         ))}
-        <div style={{ height: padding }} />
+        <div style={{ height: padding }} aria-hidden />
       </div>
     </div>
   )
