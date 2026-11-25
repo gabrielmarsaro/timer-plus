@@ -1445,6 +1445,9 @@ button.phase-block:not(:disabled) {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
   transition: color 120ms ease;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
   /* No scale() — it makes the column feel “loose” / off-axis while scrolling. */
 }
 
@@ -1457,6 +1460,11 @@ button.phase-block:not(:disabled) {
   text-overflow: ellipsis;
   padding-inline: 6px;
   box-sizing: border-box;
+  pointer-events: none;
+}
+
+.wheel-scroller:focus {
+  outline: none;
 }
 
 .wheel-item.is-active {
