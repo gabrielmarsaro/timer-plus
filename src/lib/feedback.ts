@@ -1,6 +1,14 @@
 import { Capacitor } from '@capacitor/core'
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics'
 import type { GeneralSettings, Phase } from '../types'
+import {
+  bindWorkoutAudioContext,
+  configureWorkoutMusic,
+  isWorkoutMusicAudible,
+  isWorkoutMusicSessionActive,
+  setExternalMusicBlocked,
+  stopWorkoutMusic,
+} from './workoutMusic'
 
 type SoundKind = 'tick' | 'phase' | 'done' | 'warning' | 'preview'
 type SessionType = 'auto' | 'ambient' | 'transient' | 'playback'
@@ -33,6 +41,7 @@ export function isAppleTouchWeb(): boolean {
 
 export function configureFeedback(next: GeneralSettings): void {
   settings = next
+  configureWorkoutMusic(next)
 }
 
 function getCtx(): AudioContext | null {
@@ -41,6 +50,7 @@ function getCtx(): AudioContext | null {
     try {
       audioCtx = new AudioCtxCtor()
       bindMediaWatch(audioCtx)
+      bindWorkoutAudioContext(audioCtx)
     } catch {
       return null
     }
@@ -55,11 +65,13 @@ function bindMediaWatch(ctx: AudioContext): void {
     const state = ctx.state as string
     if (state === 'interrupted') {
       externalMusic = true
+      setExternalMusicBlocked(Boolean(settings?.ducking))
       return
     }
     if (state === 'running' && document.visibilityState === 'visible') {
       // Other music often keeps us interrupted/suspended; running again → clear.
       externalMusic = false
+      setExternalMusicBlocked(false)
     }
   })
 }
@@ -150,6 +162,7 @@ export function refreshExternalMusicState(): boolean {
   const state = ctx.state as string
   if (state === 'interrupted') {
     externalMusic = true
+    setExternalMusicBlocked(Boolean(settings?.ducking))
     return true
   }
 
@@ -158,14 +171,18 @@ export function refreshExternalMusicState(): boolean {
       const next = ctx.state as string
       if (next === 'suspended' || next === 'interrupted') {
         externalMusic = true
+        setExternalMusicBlocked(Boolean(settings?.ducking))
       } else if (next === 'running') {
         externalMusic = false
+        setExternalMusicBlocked(false)
       }
     }).catch(() => {
       externalMusic = true
+      setExternalMusicBlocked(Boolean(settings?.ducking))
     })
   }
 
+  setExternalMusicBlocked(externalMusic && Boolean(settings?.ducking))
   return externalMusic
 }
 
@@ -312,8 +329,8 @@ function playSound(kind: SoundKind): void {
   if (kind === 'tick' && !settings.ticking) return
   if (kind !== 'tick' && !settings.soundEffect && kind !== 'preview') return
 
-  // With background music: keep only start/end (and warning) alerts — no ticks.
-  if (kind === 'tick' && shouldSilenceAmbient()) return
+  // Spotify/etc. ou sessão Tabata com música: sem tic-tac (a trilha marca o tempo).
+  if (kind === 'tick' && (shouldSilenceAmbient() || isWorkoutMusicSessionActive())) return
 
   const vol = volume()
   const soundType = settings.soundType
@@ -479,9 +496,12 @@ export function announcePhase(phase: Phase | null, next?: Phase | null): void {
   if (!phase) return
   ensureAudioReady()
   void vibrate('phase')
-  playSound('phase')
 
-  // Voice for phase start/end alerts always (even with music) — user asked for start/end alerts.
+  const musicOwnsTempo = isWorkoutMusicSessionActive() || isWorkoutMusicAudible()
+  // Com a música Tabata, GO/REST já vêm na trilha — não empilha bip de fase.
+  if (!musicOwnsTempo) playSound('phase')
+
+  // Voz de início de fase (mesmo com música).
   const label = phase.label.toLowerCase()
   if (phase.kind === 'work' && phase.round) {
     speak(`${label}. Ronda ${phase.round}`)
@@ -489,7 +509,8 @@ export function announcePhase(phase: Phase | null, next?: Phase | null): void {
     speak(label)
   }
 
-  if (next && !shouldSilenceAmbient()) {
+  // Sem “em seguida…” por cima da batida (dois tempos ao mesmo tempo).
+  if (next && !shouldSilenceAmbient() && !musicOwnsTempo) {
     window.setTimeout(() => {
       speak(`Em seguida, ${next.label.toLowerCase()}`)
     }, 1100)
@@ -498,6 +519,7 @@ export function announcePhase(phase: Phase | null, next?: Phase | null): void {
 
 export function announceDone(): void {
   ensureAudioReady()
+  stopWorkoutMusic()
   void vibrate('done')
   playSound('done')
   speak('Treino concluído')
@@ -509,21 +531,21 @@ export function onCountdownSecond(remaining: number, phase: Phase | null, warnin
   const whole = Math.ceil(remaining)
   ensureAudioReady()
 
-  const hush = shouldSilenceAmbient()
+  // Um tempo de cada vez: Spotify OU sessão Tabata com música → sem tic-tac / countdown falado.
+  const musicTempo = shouldSilenceAmbient() || isWorkoutMusicSessionActive()
 
-  if (settings?.ticking && whole > 0 && !hush) {
+  if (settings?.ticking && whole > 0 && !musicTempo) {
     playSound('tick')
     void vibrate('tick')
   }
 
-  if (warning > 0 && whole === warning) {
+  if (warning > 0 && whole === warning && !musicTempo) {
     playSound('warning')
     void vibrate('warning')
     speak(`${warning} segundos`)
   }
 
-  // Countdown chatter stays off while music plays — only start/end alerts remain.
-  if (!hush && whole <= 3 && whole >= 1) {
+  if (!musicTempo && whole <= 3 && whole >= 1) {
     speak(String(whole))
   }
 }
