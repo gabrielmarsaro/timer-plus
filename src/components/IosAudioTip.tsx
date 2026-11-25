@@ -9,8 +9,9 @@ export function IosAudioTip({ open, onClose }: IosAudioTipProps) {
   return (
     <div className="ios-audio-tip" role="status">
       <p>
-        No iPhone: desative o <strong>mute lateral</strong> e aumente o volume dos botões.
-        Toque em <strong>INICIAR</strong> de novo se ainda estiver mudo.
+        No iPhone: desative o <strong>mute lateral</strong> e aumente o volume. Com o timer
+        a correr, o tempo aparece em <strong>A reproduzir</strong> na tela bloqueada. Toque em{' '}
+        <strong>INICIAR</strong> de novo se ainda estiver mudo.
       </p>
       <button type="button" className="ios-audio-tip-ok" onClick={onClose}>
         OK

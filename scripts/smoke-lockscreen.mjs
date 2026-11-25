@@ -5,14 +5,42 @@ const page = await browser.newPage({ viewport: { width: 390, height: 844 } })
 await page.goto('http://127.0.0.1:5173/', { waitUntil: 'networkidle' })
 
 await page.getByRole('button', { name: 'INICIAR', exact: true }).click()
-await page.waitForTimeout(400)
+await page.waitForTimeout(600)
+
+const media = await page.evaluate(async () => {
+  // Give keep-alive a moment to start.
+  await new Promise((r) => setTimeout(r, 200))
+  const audio = document.querySelector('audio')
+  return {
+    hasSession: 'mediaSession' in navigator,
+    title: navigator.mediaSession?.metadata?.title ?? null,
+    artist: navigator.mediaSession?.metadata?.artist ?? null,
+    playback: navigator.mediaSession?.playbackState ?? null,
+    audioPaused: audio ? audio.paused : null,
+    audioSrc: audio?.currentSrc || audio?.src || null,
+    audioVolume: audio?.volume ?? null,
+  }
+})
+
+if (!media.hasSession) throw new Error('Media Session missing')
+if (!media.title || !/\d/.test(media.title)) {
+  throw new Error(`Expected time in Now Playing title, got: ${JSON.stringify(media)}`)
+}
+if (media.playback !== 'playing') {
+  throw new Error(`Expected playback playing, got ${media.playback}`)
+}
+if (media.audioPaused !== false) {
+  throw new Error(`Keep-alive audio should be playing: ${JSON.stringify(media)}`)
+}
+if (!media.audioSrc || !/lock-keepalive\.wav/.test(media.audioSrc)) {
+  throw new Error(`Expected lock-keepalive.wav src, got ${media.audioSrc}`)
+}
 
 const before = await page.evaluate(() => {
   const t = document.querySelector('.phase-time')
   return t?.textContent?.trim() ?? ''
 })
 
-// Simulate screen lock: mark document hidden for ~2.2s then restore.
 await page.evaluate(() => {
   Object.defineProperty(document, 'hidden', { configurable: true, get: () => true })
   Object.defineProperty(document, 'visibilityState', {
@@ -38,13 +66,6 @@ const after = await page.evaluate(() => {
   return t?.textContent?.trim() ?? ''
 })
 
-const media = await page.evaluate(() => ({
-  hasSession: 'mediaSession' in navigator,
-  title: navigator.mediaSession?.metadata?.title ?? null,
-  artist: navigator.mediaSession?.metadata?.artist ?? null,
-  playback: navigator.mediaSession?.playbackState ?? null,
-}))
-
 function toSeconds(text) {
   const parts = text.split(':').map((p) => Number(p))
   if (parts.length === 2 && parts.every((n) => Number.isFinite(n))) {
@@ -56,18 +77,11 @@ function toSeconds(text) {
 
 const b = toSeconds(before)
 const a = toSeconds(after)
-if (!Number.isFinite(b) || !Number.isFinite(a)) {
-  throw new Error(`Could not parse times before=${before} after=${after}`)
-}
 const dropped = b - a
-if (dropped < 1.5 || dropped > 4) {
-  throw new Error(`Expected ~2s wall-clock drop, got ${dropped} (before=${before} after=${after})`)
-}
-if (!media.hasSession) throw new Error('Media Session missing')
-if (!media.title && !media.artist) {
-  throw new Error(`Lock screen metadata empty: ${JSON.stringify(media)}`)
+if (!Number.isFinite(b) || !Number.isFinite(a) || dropped < 1.5 || dropped > 4) {
+  throw new Error(`Expected ~2s wall-clock drop, got ${dropped} (${before} → ${after})`)
 }
 
-console.log(JSON.stringify({ before, after, dropped, media }))
+console.log(JSON.stringify({ media, before, after, dropped }))
 console.log('PASS')
 await browser.close()

@@ -182,16 +182,21 @@ export default function App() {
 
   useWakeLock(activeRunning)
 
-  // Lock screen / notification media session: show phase + remaining time.
+  // Lock screen Now Playing (Safari) / Media Session notification (Android).
   useEffect(() => {
-    if (tab === 'tabata' && tabata.status === 'running' && tabata.currentPhase) {
+    const tabataLive =
+      tab === 'tabata' &&
+      (tabata.status === 'running' || tabata.status === 'paused') &&
+      tabata.currentPhase
+    if (tabataLive && tabata.currentPhase) {
       syncLockScreen(
         {
           mode: 'tabata',
           phaseLabel: tabata.currentPhase.label || PHASE_LABELS[tabata.currentPhase.kind],
           seconds: tabata.phaseRemaining,
           durationSeconds: tabata.currentPhase.duration,
-          running: true,
+          running: tabata.status === 'running',
+          paused: tabata.status === 'paused',
         },
         (action) => {
           if (action === 'pause') {
@@ -207,14 +212,19 @@ export default function App() {
       )
       return
     }
-    if (tab === 'rounds' && rounds.status === 'running' && rounds.currentPhase) {
+    const roundsLive =
+      tab === 'rounds' &&
+      (rounds.status === 'running' || rounds.status === 'paused') &&
+      rounds.currentPhase
+    if (roundsLive && rounds.currentPhase) {
       syncLockScreen(
         {
           mode: 'rounds',
           phaseLabel: rounds.currentPhase.label || PHASE_LABELS[rounds.currentPhase.kind],
           seconds: rounds.phaseRemaining,
           durationSeconds: rounds.currentPhase.duration,
-          running: true,
+          running: rounds.status === 'running',
+          paused: rounds.status === 'paused',
         },
         (action) => {
           if (action === 'pause') rounds.pause()
@@ -224,14 +234,18 @@ export default function App() {
       )
       return
     }
-    if (tab === 'stopwatch' && stopwatch.status === 'running') {
+    if (
+      tab === 'stopwatch' &&
+      (stopwatch.status === 'running' || stopwatch.status === 'paused')
+    ) {
       syncLockScreen(
         {
           mode: 'stopwatch',
           phaseLabel: 'Cronómetro',
           seconds: stopwatch.elapsedMs / 1000,
           durationSeconds: Math.max(60, stopwatch.elapsedMs / 1000 + 1),
-          running: true,
+          running: stopwatch.status === 'running',
+          paused: stopwatch.status === 'paused',
         },
         (action) => {
           if (action === 'pause') stopwatch.pause()
@@ -257,7 +271,11 @@ export default function App() {
     stopwatch.status,
   ])
 
-  useEffect(() => () => stopLockScreen(), [])
+  useEffect(() => {
+    return () => {
+      void stopLockScreen()
+    }
+  }, [])
 
   useEffect(() => {
     localStorage.setItem(TABATA_KEY, JSON.stringify(tabataSettings))
