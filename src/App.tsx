@@ -24,10 +24,12 @@ import {
 } from './lib/feedback'
 import { pauseWorkoutMusic, stopWorkoutMusic, syncWorkoutMusic } from './lib/workoutMusic'
 import { buildPhases, buildRoundsPhases } from './lib/buildPhases'
+import { primeLockScreenAudio, syncLockScreen, stopLockScreen } from './lib/lockScreen'
 import {
   DEFAULT_GENERAL_SETTINGS,
   DEFAULT_ROUNDS_SETTINGS,
   DEFAULT_SETTINGS,
+  PHASE_LABELS,
   type GeneralSettings,
   type RoundsSettings,
   type Tab,
@@ -180,6 +182,83 @@ export default function App() {
 
   useWakeLock(activeRunning)
 
+  // Lock screen / notification media session: show phase + remaining time.
+  useEffect(() => {
+    if (tab === 'tabata' && tabata.status === 'running' && tabata.currentPhase) {
+      syncLockScreen(
+        {
+          mode: 'tabata',
+          phaseLabel: tabata.currentPhase.label || PHASE_LABELS[tabata.currentPhase.kind],
+          seconds: tabata.phaseRemaining,
+          durationSeconds: tabata.currentPhase.duration,
+          running: true,
+        },
+        (action) => {
+          if (action === 'pause') {
+            pauseWorkoutMusic()
+            tabata.pause()
+          } else if (action === 'resume') {
+            void tabata.resume()
+          } else if (action === 'stop') {
+            tabata.reset()
+            stopWorkoutMusic()
+          }
+        },
+      )
+      return
+    }
+    if (tab === 'rounds' && rounds.status === 'running' && rounds.currentPhase) {
+      syncLockScreen(
+        {
+          mode: 'rounds',
+          phaseLabel: rounds.currentPhase.label || PHASE_LABELS[rounds.currentPhase.kind],
+          seconds: rounds.phaseRemaining,
+          durationSeconds: rounds.currentPhase.duration,
+          running: true,
+        },
+        (action) => {
+          if (action === 'pause') rounds.pause()
+          else if (action === 'resume') void rounds.resume()
+          else if (action === 'stop') rounds.reset()
+        },
+      )
+      return
+    }
+    if (tab === 'stopwatch' && stopwatch.status === 'running') {
+      syncLockScreen(
+        {
+          mode: 'stopwatch',
+          phaseLabel: 'Cronómetro',
+          seconds: stopwatch.elapsedMs / 1000,
+          durationSeconds: Math.max(60, stopwatch.elapsedMs / 1000 + 1),
+          running: true,
+        },
+        (action) => {
+          if (action === 'pause') stopwatch.pause()
+          else if (action === 'resume') stopwatch.resume()
+          else if (action === 'stop') stopwatch.reset()
+        },
+      )
+      return
+    }
+    stopLockScreen()
+  }, [
+    rounds,
+    stopwatch,
+    tab,
+    tabata,
+    tabata.currentPhase,
+    tabata.phaseRemaining,
+    tabata.status,
+    rounds.currentPhase,
+    rounds.phaseRemaining,
+    rounds.status,
+    stopwatch.elapsedMs,
+    stopwatch.status,
+  ])
+
+  useEffect(() => () => stopLockScreen(), [])
+
   useEffect(() => {
     localStorage.setItem(TABATA_KEY, JSON.stringify(tabataSettings))
   }, [tabataSettings])
@@ -285,6 +364,7 @@ export default function App() {
     (timer: typeof tabata, kind: 'tabata' | 'rounds') =>
     () => {
       unlockFeedback()
+      primeLockScreenAudio()
 
       if (timer.status === 'running') {
         pauseWorkoutMusic()
@@ -302,6 +382,7 @@ export default function App() {
 
   const toggleStopwatch = () => {
     unlockFeedback()
+    primeLockScreenAudio()
     if (stopwatch.status === 'running') {
       stopwatch.pause()
       return

@@ -19,9 +19,9 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 2. Desative o **mute lateral** e aumente o volume.  
 3. **Compartilhar** → **Adicionar à Tela de Início**.
 
-## Android (APK) — versão **1.3.0**
+## Android (APK) — versão **1.4.0**
 
-**https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/dd917bd1994d798bf98a5596910ae35d75d449a8/releases/timer-plus-debug.apk**
+**https://github.com/gabrielmarsaro/timer-plus/raw/main/releases/timer-plus-debug.apk**
 
 1. Baixe no Chrome.  
 2. Permita **fontes desconhecidas** se pedir.  

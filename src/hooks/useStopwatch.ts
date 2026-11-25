@@ -21,6 +21,9 @@ export interface UseStopwatchResult {
   lap: () => void
 }
 
+/**
+ * Wall-clock stopwatch so locking the screen does not freeze elapsed time.
+ */
 export function useStopwatch(): UseStopwatchResult {
   const [status, setStatus] = useState<StopwatchStatus>('idle')
   const [elapsedMs, setElapsedMs] = useState(0)
@@ -30,8 +33,12 @@ export function useStopwatch(): UseStopwatchResult {
   const elapsedRef = useRef(0)
   const lapBaseRef = useRef(0)
   const rafRef = useRef(0)
-  const lastTickRef = useRef<number | null>(null)
+  const intervalRef = useRef<number | null>(null)
   const lastShownCsRef = useRef(0)
+  /** Wall time when the current running segment started. */
+  const segmentStartedAtRef = useRef<number | null>(null)
+  /** Elapsed ms accumulated before the current running segment. */
+  const baseElapsedRef = useRef(0)
 
   statusRef.current = status
   elapsedRef.current = elapsedMs
@@ -39,37 +46,40 @@ export function useStopwatch(): UseStopwatchResult {
   const stopLoop = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current)
     rafRef.current = 0
-    lastTickRef.current = null
+    if (intervalRef.current !== null) {
+      window.clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
   }, [])
 
-  const tick = useCallback(
-    (now: number) => {
-      if (statusRef.current !== 'running') return
-      if (lastTickRef.current === null) {
-        lastTickRef.current = now
-        rafRef.current = requestAnimationFrame(tick)
-        return
-      }
-      const delta = now - lastTickRef.current
-      lastTickRef.current = now
-      const next = elapsedRef.current + delta
-      elapsedRef.current = next
-      // Only re-render when the displayed centisecond changes — avoids jitter.
-      const shownCs = Math.floor(next / 10)
-      if (shownCs !== lastShownCsRef.current) {
-        lastShownCsRef.current = shownCs
-        setElapsedMs(shownCs * 10)
-      }
-      rafRef.current = requestAnimationFrame(tick)
-    },
-    [],
-  )
+  const readElapsed = useCallback(() => {
+    const started = segmentStartedAtRef.current
+    if (started === null) return baseElapsedRef.current
+    return baseElapsedRef.current + (Date.now() - started)
+  }, [])
+
+  const publish = useCallback((next: number) => {
+    elapsedRef.current = next
+    const shownCs = Math.floor(next / 10)
+    if (shownCs !== lastShownCsRef.current) {
+      lastShownCsRef.current = shownCs
+      setElapsedMs(shownCs * 10)
+    }
+  }, [])
+
+  const tick = useCallback(() => {
+    if (statusRef.current !== 'running') return
+    publish(readElapsed())
+    rafRef.current = requestAnimationFrame(tick)
+  }, [publish, readElapsed])
 
   const startLoop = useCallback(() => {
     stopLoop()
-    lastTickRef.current = null
     rafRef.current = requestAnimationFrame(tick)
-  }, [stopLoop, tick])
+    intervalRef.current = window.setInterval(() => {
+      if (statusRef.current === 'running') publish(readElapsed())
+    }, 250)
+  }, [publish, readElapsed, stopLoop, tick])
 
   const start = useCallback(() => {
     setStatus('running')
@@ -78,19 +88,25 @@ export function useStopwatch(): UseStopwatchResult {
     elapsedRef.current = 0
     lapBaseRef.current = 0
     lastShownCsRef.current = 0
+    baseElapsedRef.current = 0
+    segmentStartedAtRef.current = Date.now()
     startLoop()
   }, [startLoop])
 
   const pause = useCallback(() => {
+    const next = readElapsed()
     stopLoop()
-    const shown = Math.floor(elapsedRef.current / 10) * 10
+    baseElapsedRef.current = next
+    segmentStartedAtRef.current = null
+    const shown = Math.floor(next / 10) * 10
     elapsedRef.current = shown
     lastShownCsRef.current = shown / 10
     setElapsedMs(shown)
     setStatus('paused')
-  }, [stopLoop])
+  }, [readElapsed, stopLoop])
 
   const resume = useCallback(() => {
+    segmentStartedAtRef.current = Date.now()
     setStatus('running')
     startLoop()
   }, [startLoop])
@@ -103,29 +119,37 @@ export function useStopwatch(): UseStopwatchResult {
     elapsedRef.current = 0
     lapBaseRef.current = 0
     lastShownCsRef.current = 0
+    baseElapsedRef.current = 0
+    segmentStartedAtRef.current = null
   }, [stopLoop])
 
   const lap = useCallback(() => {
     if (statusRef.current !== 'running') return
-    const total = elapsedRef.current
+    const total = readElapsed()
     const lapMs = total - lapBaseRef.current
     lapBaseRef.current = total
     setLaps((prev) => [
       { index: prev.length + 1, lapMs, totalMs: total },
       ...prev,
     ])
-  }, [])
+  }, [readElapsed])
 
   useEffect(() => () => stopLoop(), [stopLoop])
 
   useEffect(() => {
     if (status !== 'running') return
     const onVisibility = () => {
-      if (document.hidden) lastTickRef.current = null
+      publish(readElapsed())
     }
     document.addEventListener('visibilitychange', onVisibility)
-    return () => document.removeEventListener('visibilitychange', onVisibility)
-  }, [status])
+    window.addEventListener('focus', onVisibility)
+    window.addEventListener('pageshow', onVisibility)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('focus', onVisibility)
+      window.removeEventListener('pageshow', onVisibility)
+    }
+  }, [publish, readElapsed, status])
 
   return { status, elapsedMs, laps, start, pause, resume, reset, lap }
 }
