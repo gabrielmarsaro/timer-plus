@@ -1,6 +1,7 @@
 import { formatStopwatch } from '../lib/format'
 import type { Lap, StopwatchStatus } from '../hooks/useStopwatch'
-import { GearIcon, PauseIcon, PlayIcon, ResetIcon } from './Icons'
+import { ForgeMark, GearIcon, PauseIcon, PlayIcon, ResetIcon } from './Icons'
+import { PlayControl } from './PlayControl'
 
 interface StopwatchScreenProps {
   status: StopwatchStatus
@@ -45,6 +46,10 @@ export function StopwatchScreen({
           <GearIcon />
         </button>
         <div className="header-center">
+          <p className="brand-mark header-brand">
+            <ForgeMark className="brand-rune" />
+            TIMER VIKING
+          </p>
           <h1>CRONÓMETRO</h1>
           <p className="total-time stopwatch-subtitle">
             {laps.length > 0 ? `${laps.length} VOLTA${laps.length === 1 ? '' : 'S'}` : 'VOLTAS'}
@@ -89,17 +94,15 @@ export function StopwatchScreen({
           </button>
         </div>
 
-        <div className="play-block">
-          <button
-            type="button"
-            className="play-btn"
-            onClick={onToggle}
-            aria-label={actionLabel}
-          >
-            {isRunning ? <PauseIcon /> : <PlayIcon />}
-          </button>
-          <p className="play-label">{actionLabel}</p>
-        </div>
+        <PlayControl
+          label={actionLabel}
+          running={isRunning}
+          progress={1}
+          ringColor="var(--accent)"
+          onClick={onToggle}
+        >
+          {isRunning ? <PauseIcon /> : <PlayIcon className="play-glyph" />}
+        </PlayControl>
 
         <div className="stat-block">
           <button

@@ -1,6 +1,6 @@
 import { Capacitor } from '@capacitor/core'
 import { StatusBar, Style } from '@capacitor/status-bar'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { BottomNav } from './components/BottomNav'
 import { GeneralSettingsModal } from './components/GeneralSettingsModal'
 import { FirstRunCoach } from './components/FirstRunCoach'
@@ -424,11 +424,23 @@ export default function App() {
     (tab === 'tabata' && tabata.status !== 'idle') ||
     (tab === 'rounds' && rounds.status !== 'idle')
 
+  const livePhaseColor =
+    tab === 'tabata' && tabata.currentPhase
+      ? tabata.currentPhase.color
+      : tab === 'rounds' && rounds.currentPhase
+        ? rounds.currentPhase.color
+        : undefined
+
   return (
     <div
       className={`app-shell${screenFlash ? ' is-flashing' : ''}${
         generalSettings.lightColors ? ' theme-light' : ''
       }${timerLive ? ' is-timer-live' : ''}`}
+      style={
+        livePhaseColor
+          ? ({ ['--phase-color' as string]: livePhaseColor } as CSSProperties)
+          : undefined
+      }
     >
       <main className="app-main">
         {tab === 'tabata' && (

@@ -13,14 +13,14 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## iPhone (Safari)
 
-**https://luminous-rune-4ecwa6s.shipstatic.com/**
+**https://dazzling-mind-ehrc5c4.shipstatic.com/**
 
 1. Abra no **Safari**.  
 2. Desative o **mute lateral** se quiser alertas sonoros.  
 3. Toque **INICIAR** — o tempo aparece em **A reproduzir** na tela bloqueada.  
 4. **Compartilhar** → **Adicionar à Tela de Início**.
 
-## Android (APK) — versão **1.5.2**
+## Android (APK) — versão **1.5.3**
 
 **https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/5b102543d7a64ac2fefd9ff23b19fe10b670451b/releases/timer-plus-debug.apk**
 
@@ -30,9 +30,9 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
 
-Página de download: https://luminous-rune-4ecwa6s.shipstatic.com/baixar.html
+Página de download: https://dazzling-mind-ehrc5c4.shipstatic.com/baixar.html
 
-## Novidades 1.5.2
+## Novidades 1.5.3
 
 - **Pular** fase e **+15s** no meio do treino
 - Mudar de aba / editar **não mata** a sessão ativa

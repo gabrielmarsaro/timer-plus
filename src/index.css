@@ -2,6 +2,7 @@
   color-scheme: dark;
   /* Timer Viking — forja nórdica */
   --bg: #0b0e12;
+  --bg-mid: #121821;
   --yellow: #e8d5a3;
   --green: #d4a017;
   --accent: #d4a017;
@@ -10,9 +11,12 @@
   --muted: #8b93a7;
   --panel: #151a24;
   --border: #2a3344;
+  --phase-color: #d4a017;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --nav-height: 72px;
-  font-family: 'Barlow Condensed', 'Arial Narrow', Impact, sans-serif;
+  --font-display: 'Barlow Condensed', 'Arial Narrow', Impact, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  font-family: var(--font-display);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -32,7 +36,10 @@ body,
 }
 
 body {
-  background: var(--bg);
+  background:
+    radial-gradient(120% 80% at 50% -10%, #1a2433 0%, transparent 55%),
+    radial-gradient(90% 60% at 80% 110%, rgba(212, 160, 23, 0.08), transparent 50%),
+    var(--bg);
   color: var(--text);
   overflow: hidden;
 }
@@ -56,8 +63,28 @@ button {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  background: var(--bg);
+  background:
+    radial-gradient(ellipse 90% 50% at 50% -5%, rgba(232, 213, 163, 0.07), transparent 55%),
+    radial-gradient(ellipse 70% 40% at 50% 100%, color-mix(in srgb, var(--phase-color) 14%, transparent), transparent 60%),
+    linear-gradient(180deg, #10151e 0%, var(--bg) 42%, #090c10 100%);
   position: relative;
+  overflow: hidden;
+  transition: background 420ms ease;
+}
+
+.app-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  z-index: 0;
+}
+
+.app-shell > * {
+  position: relative;
+  z-index: 1;
 }
 
 .app-main {
@@ -100,19 +127,21 @@ button {
 }
 
 .header-center h1 {
-  color: var(--yellow);
-  font-size: 1.55rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  color: var(--text);
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
   line-height: 1;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
 }
 
 .total-time {
-  margin-top: 4px;
+  margin-top: 6px;
   color: var(--yellow);
-  font-size: 1.35rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-family: var(--font-mono);
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
 }
 
 .header-right {
@@ -207,9 +236,20 @@ button {
 }
 
 .header-brand {
-  margin-bottom: 4px;
-  font-size: 0.72rem;
-  letter-spacing: 0.2em;
+  margin-bottom: 6px;
+  font-size: 0.78rem;
+  letter-spacing: 0.22em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.brand-rune {
+  width: 14px;
+  height: 14px;
+  color: var(--accent);
+  flex-shrink: 0;
 }
 
 .progress-chip {
@@ -217,9 +257,9 @@ button {
   display: inline-block;
   padding: 3px 10px;
   border-radius: 999px;
-  background: #1a1a1a;
-  border: 1px solid #333;
-  color: #cfcfcf;
+  background: color-mix(in srgb, var(--panel) 80%, var(--phase-color));
+  border: 1px solid color-mix(in srgb, var(--border) 65%, var(--phase-color));
+  color: var(--text);
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -239,9 +279,9 @@ button {
   height: 40px;
   padding: 0 14px;
   border-radius: 12px;
-  background: #1c1c1c;
+  background: color-mix(in srgb, var(--panel) 88%, var(--phase-color));
   color: var(--yellow);
-  border: 1px solid #333;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, var(--phase-color));
   font-weight: 700;
   font-size: 0.82rem;
   letter-spacing: 0.06em;
@@ -249,6 +289,7 @@ button {
   align-items: center;
   justify-content: center;
   gap: 6px;
+  backdrop-filter: blur(6px);
 }
 
 .adjust-btn svg {
@@ -353,7 +394,7 @@ button {
 .controls-row.is-live {
   padding-top: 12px;
   padding-bottom: 12px;
-  background: var(--bg);
+  background: transparent;
   position: relative;
   z-index: 3;
 }
@@ -415,9 +456,62 @@ button {
   text-align: center;
   color: #111;
   padding: 8px 12px;
-  transition: background 180ms ease;
+  transition: background 220ms ease, box-shadow 220ms ease;
   width: 100%;
   border: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.forge-plate {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -10px 24px rgba(0, 0, 0, 0.18),
+    0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+.forge-plate-shine {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, transparent 38%),
+    linear-gradient(180deg, transparent 60%, rgba(0, 0, 0, 0.12) 100%);
+}
+
+.phase-progress-bar {
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  bottom: 14px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+
+.phase-progress-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: rgba(17, 17, 17, 0.55);
+  transition: width 180ms linear;
+}
+
+.phase-stack.is-urgent .phase-primary.is-star {
+  animation: phase-urgent-pulse 700ms ease-in-out infinite;
+}
+
+@keyframes phase-urgent-pulse {
+  0%,
+  100% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+  50% {
+    filter: brightness(1.08);
+    transform: scale(1.015);
+  }
 }
 
 button.phase-block:disabled {
@@ -453,6 +547,7 @@ button.phase-block:not(:disabled) {
 }
 
 .phase-time {
+  font-family: var(--font-mono);
   font-weight: 700;
   letter-spacing: 0.02em;
   line-height: 0.95;
@@ -475,7 +570,7 @@ button.phase-block:not(:disabled) {
   align-items: center;
   gap: 8px;
   padding: 18px 14px 10px;
-  background: var(--bg);
+  background: transparent;
 }
 
 .stat-block {
@@ -483,7 +578,8 @@ button.phase-block:not(:disabled) {
 }
 
 .stat-value {
-  font-size: clamp(2.8rem, 12vw, 3.8rem);
+  font-family: var(--font-mono);
+  font-size: clamp(2.6rem, 11vw, 3.6rem);
   font-weight: 700;
   line-height: 1;
 }
@@ -515,20 +611,80 @@ button.phase-block:not(:disabled) {
 }
 
 .play-btn {
-  width: 86px;
-  height: 86px;
+  width: 92px;
+  height: 92px;
   border-radius: 50%;
-  background: var(--yellow);
+  background: transparent;
   color: #111;
   display: grid;
   place-items: center;
-  box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--accent);
+  position: relative;
 }
 
-.play-btn svg {
-  width: 42px;
-  height: 42px;
+.play-ring {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+  width: 100%;
+  height: 100%;
+}
+
+.play-ring-track {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.08);
+  stroke-width: 4.5;
+}
+
+.play-ring-value {
+  fill: none;
+  stroke-width: 4.5;
+  stroke-linecap: round;
+  transition: stroke-dasharray 160ms linear, stroke 220ms ease;
+}
+
+.play-btn-face {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background:
+    linear-gradient(160deg, #f3e6c4 0%, var(--yellow) 45%, #c9a45a 100%);
+  color: #111;
+  display: grid;
+  place-items: center;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -6px 14px rgba(0, 0, 0, 0.18),
+    0 8px 20px rgba(0, 0, 0, 0.35);
+  position: relative;
+  z-index: 1;
+}
+
+.play-btn-face svg {
+  width: 34px;
+  height: 34px;
+}
+
+.play-btn-face .play-glyph {
   margin-left: 3px;
+}
+
+.play-block.is-running .play-btn-face {
+  background:
+    linear-gradient(160deg, #fff6df 0%, var(--yellow) 40%, #b8891a 100%);
+}
+
+.play-block.is-urgent .play-ring-value {
+  animation: ring-urgent 700ms ease-in-out infinite;
+}
+
+@keyframes ring-urgent {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
 }
 
 .play-btn:active {
@@ -551,8 +707,10 @@ button.phase-block:not(:disabled) {
   padding: 8px 8px calc(10px + var(--safe-bottom));
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  background: var(--bg);
-  border-top: 1px solid #151515;
+  background:
+    linear-gradient(180deg, rgba(16, 21, 30, 0.72), rgba(11, 14, 18, 0.96));
+  border-top: 1px solid color-mix(in srgb, var(--accent) 28%, #1a2030);
+  backdrop-filter: blur(10px);
   transition: transform 320ms ease, opacity 240ms ease;
 }
 
@@ -561,8 +719,9 @@ button.phase-block:not(:disabled) {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  color: #bdbdbd;
+  color: var(--muted);
   min-width: 0;
+  position: relative;
 }
 
 .nav-icon-wrap {
@@ -570,15 +729,27 @@ button.phase-block:not(:disabled) {
   height: 28px;
   display: grid;
   place-items: center;
-  border-radius: 999px;
+  border-radius: 10px;
+  transition: background 200ms ease, color 200ms ease;
 }
 
 .nav-item.is-active .nav-icon-wrap {
-  background: #222;
+  background: color-mix(in srgb, var(--accent) 18%, #1a2030);
+  color: var(--accent);
 }
 
 .nav-item.is-active {
-  color: #fff;
+  color: var(--text);
+}
+
+.nav-item.is-active::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
 }
 
 .nav-icon {
@@ -636,11 +807,11 @@ button.phase-block:not(:disabled) {
   justify-content: center;
   padding: 18px 16px 8px;
   min-height: 180px;
-  background: linear-gradient(180deg, #151a24 0%, var(--bg) 100%);
+  background: transparent;
 }
 
 .stopwatch-screen.is-live .stopwatch-stage {
-  background: linear-gradient(180deg, #2a2208 0%, var(--bg) 70%);
+  background: radial-gradient(ellipse 70% 55% at 50% 40%, rgba(212, 160, 23, 0.12), transparent 70%);
 }
 
 .stopwatch-time {
@@ -1676,6 +1847,19 @@ html[data-allow-rotation='false'] body {
   background: #e8e8e8;
   border-color: #ccc;
   color: #222;
+}
+
+.app-shell.theme-light .play-btn-face {
+  background: linear-gradient(160deg, #fff 0%, #f0e2b8 55%, #d4a017 100%);
+}
+
+.app-shell.theme-light .bottom-nav {
+  background: rgba(243, 243, 243, 0.92);
+  border-top-color: #ccc;
+}
+
+.app-shell.theme-light {
+  background: linear-gradient(180deg, #f7f5f0 0%, #f3f3f3 50%, #ebe7df 100%);
 }
 
 .app-shell.theme-light .coach-card {

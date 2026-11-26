@@ -56,6 +56,27 @@ export function SkipIcon(props: IconProps) {
   )
 }
 
+/** Runa/escudo pequeno para marca Timer Viking. */
+export function ForgeMark(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden {...props}>
+      <path
+        d="M12 2.5 19.5 6v6.2c0 4.4-3.3 7.3-7.5 8.8-4.2-1.5-7.5-4.4-7.5-8.8V6L12 2.5Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12 7.2v5.2l3.2 1.9"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 export function TabataNavIcon(props: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>

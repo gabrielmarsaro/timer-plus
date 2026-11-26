@@ -10,28 +10,57 @@ interface PhaseHeroProps {
   focus: boolean
   primary: PhaseView
   secondary: PhaseView
+  /** Remaining fraction of the current phase (0–1). */
+  progress?: number
+  /** Last seconds of a phase — visual urgency. */
+  urgency?: boolean
 }
 
 /** Preview stack vs star-of-the-show focus for the active phase. */
-export function PhaseHero({ focus, primary, secondary }: PhaseHeroProps) {
+export function PhaseHero({
+  focus,
+  primary,
+  secondary,
+  progress = 1,
+  urgency = false,
+}: PhaseHeroProps) {
+  const pct = Math.round(Math.max(0, Math.min(1, progress)) * 100)
+
   return (
-    <div className={`phase-stack${focus ? ' is-focus' : ''}`}>
+    <div
+      className={`phase-stack${focus ? ' is-focus' : ''}${urgency ? ' is-urgent' : ''}`}
+      style={{ ['--phase-color' as string]: primary.color }}
+    >
       <div
         key={focus ? (primary.key ?? primary.label) : 'preview-primary'}
-        className={`phase-block phase-primary${focus ? ' is-star' : ''}`}
+        className={`phase-block phase-primary forge-plate${focus ? ' is-star' : ''}`}
         style={{ background: primary.color }}
       >
+        <div className="forge-plate-shine" aria-hidden />
         <p className="phase-label">{primary.label}</p>
         <p className={`phase-time ${focus ? 'phase-time-hero' : 'phase-time-lg'}`}>
           {primary.time}
         </p>
+        {focus ? (
+          <div
+            className="phase-progress-bar"
+            role="progressbar"
+            aria-valuenow={pct}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Progresso da fase"
+          >
+            <span style={{ width: `${pct}%` }} />
+          </div>
+        ) : null}
       </div>
 
       {!focus ? (
         <div
-          className="phase-block phase-secondary"
+          className="phase-block phase-secondary forge-plate"
           style={{ background: secondary.color }}
         >
+          <div className="forge-plate-shine" aria-hidden />
           <p className="phase-label">{secondary.label}</p>
           <p className="phase-time phase-time-md">{secondary.time}</p>
         </div>
