@@ -13,7 +13,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## iPhone (Safari)
 
-**https://liquid-lens-5qfw4ms.shipstatic.com/**
+**https://luminous-rune-4ecwa6s.shipstatic.com/**
 
 1. Abra no **Safari**.  
 2. Desative o **mute lateral** se quiser alertas sonoros.  
@@ -30,7 +30,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
 
-Página de download: https://liquid-lens-5qfw4ms.shipstatic.com/baixar.html
+Página de download: https://luminous-rune-4ecwa6s.shipstatic.com/baixar.html
 
 ## Novidades 1.5.2
 

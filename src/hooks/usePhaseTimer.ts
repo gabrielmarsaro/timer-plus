@@ -102,7 +102,9 @@ export function usePhaseTimer(
     if (status === 'finished') return 0
     if (status === 'idle') return totalRounds
     if (!currentPhase) return 0
-    const round = currentPhase.round ?? sessionRounds
+    // prepare/cooldown have no round — keep full count until work starts
+    if (currentPhase.round == null) return sessionRounds
+    const round = currentPhase.round
     return Math.max(0, sessionRounds - round + (currentPhase.kind === 'work' ? 1 : 0))
   }, [currentPhase, sessionRounds, status, totalRounds])
 
