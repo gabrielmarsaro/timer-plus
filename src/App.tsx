@@ -1,6 +1,13 @@
 import { Capacitor } from '@capacitor/core'
 import { StatusBar, Style } from '@capacitor/status-bar'
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react'
 import { BottomNav } from './components/BottomNav'
 import { GeneralSettingsModal } from './components/GeneralSettingsModal'
 import { FirstRunCoach } from './components/FirstRunCoach'
@@ -190,6 +197,17 @@ export default function App() {
 
   useWakeLock(activeRunning)
 
+  // Lock screen: only whole displayed seconds (ceil) — never every rAF float tick.
+  const tabataLockSec = Math.ceil(tabata.phaseRemaining)
+  const roundsLockSec = Math.ceil(rounds.phaseRemaining)
+  const stopwatchLockSec = Math.floor(stopwatch.elapsedMs / 1000)
+  const tabataRef = useRef(tabata)
+  const roundsRef = useRef(rounds)
+  const stopwatchRef = useRef(stopwatch)
+  tabataRef.current = tabata
+  roundsRef.current = rounds
+  stopwatchRef.current = stopwatch
+
   // Lock screen Now Playing (Safari) / Media Session notification (Android).
   useEffect(() => {
     const tabataLive =
@@ -197,23 +215,25 @@ export default function App() {
       (tabata.status === 'running' || tabata.status === 'paused') &&
       tabata.currentPhase
     if (tabataLive && tabata.currentPhase) {
+      const phase = tabata.currentPhase
       syncLockScreen(
         {
           mode: 'tabata',
-          phaseLabel: tabata.currentPhase.label || PHASE_LABELS[tabata.currentPhase.kind],
-          seconds: tabata.phaseRemaining,
-          durationSeconds: tabata.currentPhase.duration,
+          phaseLabel: phase.label || PHASE_LABELS[phase.kind],
+          seconds: tabataLockSec,
+          durationSeconds: phase.duration,
           running: tabata.status === 'running',
           paused: tabata.status === 'paused',
         },
         (action) => {
+          const t = tabataRef.current
           if (action === 'pause') {
             pauseWorkoutMusic()
-            tabata.pause()
+            t.pause()
           } else if (action === 'resume') {
-            void tabata.resume()
+            void t.resume()
           } else if (action === 'stop') {
-            tabata.reset()
+            t.reset()
             stopWorkoutMusic()
           }
         },
@@ -225,19 +245,21 @@ export default function App() {
       (rounds.status === 'running' || rounds.status === 'paused') &&
       rounds.currentPhase
     if (roundsLive && rounds.currentPhase) {
+      const phase = rounds.currentPhase
       syncLockScreen(
         {
           mode: 'rounds',
-          phaseLabel: rounds.currentPhase.label || PHASE_LABELS[rounds.currentPhase.kind],
-          seconds: rounds.phaseRemaining,
-          durationSeconds: rounds.currentPhase.duration,
+          phaseLabel: phase.label || PHASE_LABELS[phase.kind],
+          seconds: roundsLockSec,
+          durationSeconds: phase.duration,
           running: rounds.status === 'running',
           paused: rounds.status === 'paused',
         },
         (action) => {
-          if (action === 'pause') rounds.pause()
-          else if (action === 'resume') void rounds.resume()
-          else if (action === 'stop') rounds.reset()
+          const r = roundsRef.current
+          if (action === 'pause') r.pause()
+          else if (action === 'resume') void r.resume()
+          else if (action === 'stop') r.reset()
         },
       )
       return
@@ -250,33 +272,31 @@ export default function App() {
         {
           mode: 'stopwatch',
           phaseLabel: 'Cronómetro',
-          seconds: stopwatch.elapsedMs / 1000,
-          durationSeconds: Math.max(60, stopwatch.elapsedMs / 1000 + 1),
+          seconds: stopwatchLockSec,
+          durationSeconds: Math.max(60, stopwatchLockSec + 1),
           running: stopwatch.status === 'running',
           paused: stopwatch.status === 'paused',
         },
         (action) => {
-          if (action === 'pause') stopwatch.pause()
-          else if (action === 'resume') stopwatch.resume()
-          else if (action === 'stop') stopwatch.reset()
+          const s = stopwatchRef.current
+          if (action === 'pause') s.pause()
+          else if (action === 'resume') s.resume()
+          else if (action === 'stop') s.reset()
         },
       )
       return
     }
     stopLockScreen()
   }, [
-    rounds,
-    stopwatch,
     tab,
-    tabata,
     tabata.currentPhase,
-    tabata.phaseRemaining,
     tabata.status,
+    tabataLockSec,
     rounds.currentPhase,
-    rounds.phaseRemaining,
     rounds.status,
-    stopwatch.elapsedMs,
+    roundsLockSec,
     stopwatch.status,
+    stopwatchLockSec,
   ])
 
   useEffect(() => {
