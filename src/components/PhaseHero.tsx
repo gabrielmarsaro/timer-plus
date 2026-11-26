@@ -33,10 +33,9 @@ export function PhaseHero({
     >
       <div
         key={focus ? (primary.key ?? primary.label) : 'preview-primary'}
-        className={`phase-block phase-primary forge-plate${focus ? ' is-star' : ''}`}
+        className={`phase-block phase-primary phase-card${focus ? ' is-star' : ''}`}
         style={{ background: primary.color }}
       >
-        <div className="forge-plate-shine" aria-hidden />
         <p className="phase-label">{primary.label}</p>
         <p className={`phase-time ${focus ? 'phase-time-hero' : 'phase-time-lg'}`}>
           {primary.time}
@@ -57,10 +56,9 @@ export function PhaseHero({
 
       {!focus ? (
         <div
-          className="phase-block phase-secondary forge-plate"
+          className="phase-block phase-secondary phase-card"
           style={{ background: secondary.color }}
         >
-          <div className="forge-plate-shine" aria-hidden />
           <p className="phase-label">{secondary.label}</p>
           <p className="phase-time phase-time-md">{secondary.time}</p>
         </div>
