@@ -11,7 +11,6 @@ import {
 import { BottomNav } from './components/BottomNav'
 import { GeneralSettingsModal } from './components/GeneralSettingsModal'
 import { FirstRunCoach } from './components/FirstRunCoach'
-import { IosAudioTip } from './components/IosAudioTip'
 import { MoreScreen } from './components/MoreScreen'
 import { RoundsScreen } from './components/RoundsScreen'
 import { StopwatchScreen } from './components/StopwatchScreen'
@@ -25,7 +24,6 @@ import {
   configureFeedback,
   ensureAudioReady,
   feedbackPhaseStart,
-  isAppleTouchWeb,
   onCountdownSecond,
   previewSound,
   unlockFeedback,
@@ -121,7 +119,6 @@ export default function App() {
   const [generalOpen, setGeneralOpen] = useState(false)
   const [workoutEditOpen, setWorkoutEditOpen] = useState(false)
   const [screenFlash, setScreenFlash] = useState(false)
-  const [iosAudioTip, setIosAudioTip] = useState(false)
   const [coachOpen, setCoachOpen] = useState(() => {
     try {
       return localStorage.getItem('timer-viking:onboarding-v1') !== '1'
@@ -365,15 +362,6 @@ export default function App() {
     })
   }, [generalSettings.lightColors])
 
-  const maybeShowIosTip = () => {
-    if (!isAppleTouchWeb()) return
-    const seen = sessionStorage.getItem('timer-plus:ios-audio-tip')
-    if (!seen) {
-      sessionStorage.setItem('timer-plus:ios-audio-tip', '1')
-      window.setTimeout(() => setIosAudioTip(true), 500)
-    }
-  }
-
   /** Só um cronómetro ativo: ao iniciar um, zera os outros. */
   const stopOtherActivities = useCallback(
     (keep: 'tabata' | 'rounds' | 'stopwatch') => {
@@ -412,7 +400,6 @@ export default function App() {
         return
       }
       stopOtherActivities(kind)
-      maybeShowIosTip()
       void timer.start()
     }
 
@@ -429,7 +416,6 @@ export default function App() {
     }
     stopOtherActivities('stopwatch')
     stopWorkoutMusic()
-    maybeShowIosTip()
     stopwatch.start()
     previewSound()
   }
@@ -544,8 +530,6 @@ export default function App() {
       </main>
 
       <BottomNav active={tab} onChange={selectTab} />
-
-      <IosAudioTip open={iosAudioTip} onClose={() => setIosAudioTip(false)} />
 
       <FirstRunCoach
         open={coachOpen}

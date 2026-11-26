@@ -1393,47 +1393,6 @@ button.phase-block:not(:disabled) {
   font-weight: 500;
 }
 
-.ios-audio-tip {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: calc(18px + var(--safe-bottom));
-  z-index: 40;
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding: 14px 14px 14px 16px;
-  border-radius: 16px;
-  background: rgba(20, 20, 20, 0.96);
-  border: 1px solid #3a3a3a;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
-}
-
-.ios-audio-tip p {
-  flex: 1;
-  color: #eee;
-  font-size: 0.78rem;
-  line-height: 1.35;
-  letter-spacing: 0.02em;
-  font-family: system-ui, -apple-system, sans-serif;
-  font-weight: 500;
-}
-
-.ios-audio-tip strong {
-  color: var(--yellow);
-}
-
-.ios-audio-tip-ok {
-  flex-shrink: 0;
-  padding: 10px 14px;
-  border-radius: 12px;
-  background: var(--yellow);
-  color: #111;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  font-size: 0.85rem;
-}
-
 .native-row {
   display: flex;
   align-items: center;
