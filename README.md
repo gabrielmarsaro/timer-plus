@@ -22,7 +22,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## Android (APK) — versão **1.5.7**
 
-**https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/7a9f1073e6eb9185516df5ac241c6b48d91004b9/releases/timer-plus-debug.apk**
+**https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/47456c4e42bcc76939085c7423b2bd601447b63a/releases/timer-plus-debug.apk**
 
 1. Baixe no Chrome.  
 2. Permita **fontes desconhecidas** se pedir.  
