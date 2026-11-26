@@ -26,15 +26,23 @@ interface UsePhaseTimerResult {
   roundsLeft: number
   cyclesLeft: number
   currentRoundNumber: number
+  /** Round total for the active session (frozen while running/paused). */
+  sessionTotalRounds: number
   start: () => Promise<void>
   pause: () => void
   resume: () => Promise<void>
   reset: () => void
+  /** Jump to the next phase (or finish). Works while running or paused. */
+  skipPhase: () => void
+  /** Add seconds to the current phase remaining. */
+  extendPhase: (seconds: number) => void
 }
 
 /**
  * Wall-clock based phase timer. Uses absolute deadlines so locking the screen
  * (which pauses rAF) does not freeze the countdown — when ticks resume we catch up.
+ * Session phases are snapshotted on start so editing settings mid-run does not
+ * reshuffle the active workout.
  */
 export function usePhaseTimer(
   phases: Phase[],
@@ -58,46 +66,58 @@ export function usePhaseTimer(
   const elapsedRef = useRef(elapsedInWorkout)
   const rafRef = useRef<number | null>(null)
   const intervalRef = useRef<number | null>(null)
-  const phasesRef = useRef(phases)
+  /** Phases + round/cycle totals for the live session (frozen at start). */
+  const sessionPhasesRef = useRef(phases)
+  const sessionRoundsRef = useRef(totalRounds)
+  const sessionCyclesRef = useRef(totalCycles)
   const lastSecondRef = useRef<number | null>(null)
   const eventsRef = useRef({ onStart, onPhaseChange, onSecond, onComplete })
-  /** Absolute wall time when the current phase ends (ms). */
   const phaseEndsAtRef = useRef<number | null>(null)
-  /** Elapsed workout seconds frozen at last pause/start of phase. */
   const elapsedAtPhaseStartRef = useRef(0)
 
   statusRef.current = status
   phaseIndexRef.current = phaseIndex
   phaseRemainingRef.current = phaseRemaining
   elapsedRef.current = elapsedInWorkout
-  phasesRef.current = phases
   eventsRef.current = { onStart, onPhaseChange, onSecond, onComplete }
 
-  const currentPhase = phases[phaseIndex] ?? null
-  const nextPhase = phases[phaseIndex + 1] ?? null
-  const workoutTotal = useMemo(() => totalDuration(phases), [phases])
+  if (status === 'idle' || status === 'finished') {
+    sessionPhasesRef.current = phases
+    sessionRoundsRef.current = totalRounds
+    sessionCyclesRef.current = totalCycles
+  }
+
+  const sessionPhases = sessionPhasesRef.current
+  const sessionRounds = sessionRoundsRef.current
+  const sessionCycles = sessionCyclesRef.current
+  const currentPhase = sessionPhases[phaseIndex] ?? null
+  const nextPhase = sessionPhases[phaseIndex + 1] ?? null
+  const workoutTotal = useMemo(
+    () => totalDuration(status === 'idle' || status === 'finished' ? phases : sessionPhases),
+    [phases, sessionPhases, status],
+  )
   const totalRemaining = Math.max(0, workoutTotal - elapsedInWorkout)
 
   const roundsLeft = useMemo(() => {
     if (status === 'finished') return 0
     if (status === 'idle') return totalRounds
     if (!currentPhase) return 0
-    const round = currentPhase.round ?? totalRounds
-    return Math.max(0, totalRounds - round + (currentPhase.kind === 'work' ? 1 : 0))
-  }, [currentPhase, status, totalRounds])
+    const round = currentPhase.round ?? sessionRounds
+    return Math.max(0, sessionRounds - round + (currentPhase.kind === 'work' ? 1 : 0))
+  }, [currentPhase, sessionRounds, status, totalRounds])
 
   const cyclesLeft = useMemo(() => {
     if (status === 'finished') return 0
     if (status === 'idle') return totalCycles
     if (!currentPhase) return 0
-    return totalCycles - (currentPhase.cycle ?? 1) + 1
-  }, [currentPhase, status, totalCycles])
+    return sessionCycles - (currentPhase.cycle ?? 1) + 1
+  }, [currentPhase, sessionCycles, status, totalCycles])
 
   const currentRoundNumber = useMemo(() => {
     if (status === 'idle') return 1
-    if (status === 'finished') return totalRounds
+    if (status === 'finished') return sessionRounds
     return currentPhase?.round ?? 1
-  }, [currentPhase, status, totalRounds])
+  }, [currentPhase, sessionRounds, status])
 
   const stopLoop = useCallback(() => {
     if (rafRef.current !== null) {
@@ -118,6 +138,7 @@ export function usePhaseTimer(
     stopLoop()
     phaseEndsAtRef.current = null
     elapsedAtPhaseStartRef.current = 0
+    sessionPhasesRef.current = phases
     setStatus('idle')
     setPhaseIndex(0)
     setPhaseRemaining(phases[0]?.duration ?? 0)
@@ -133,17 +154,32 @@ export function usePhaseTimer(
     }
   }, [phases, status])
 
+  const finishWorkout = useCallback(
+    (list: Phase[]) => {
+      stopLoop()
+      phaseEndsAtRef.current = null
+      phaseIndexRef.current = Math.max(0, list.length - 1)
+      phaseRemainingRef.current = 0
+      elapsedRef.current = totalDuration(list)
+      setPhaseIndex(Math.max(0, list.length - 1))
+      setPhaseRemaining(0)
+      setElapsedInWorkout(totalDuration(list))
+      setStatus('finished')
+      eventsRef.current.onComplete?.()
+    },
+    [stopLoop],
+  )
+
   const advanceFromWallClock = useCallback(() => {
     if (statusRef.current !== 'running') return
     let endsAt = phaseEndsAtRef.current
     if (endsAt === null) return
 
-    const list = phasesRef.current
+    const list = sessionPhasesRef.current
     const now = Date.now()
     let index = phaseIndexRef.current
     let elapsedBase = elapsedAtPhaseStartRef.current
 
-    // Absolute deadlines: skip any phases that ended while the screen was locked.
     while (now >= endsAt) {
       const finishedPhase = list[index]
       if (!finishedPhase) break
@@ -152,16 +188,7 @@ export function usePhaseTimer(
       index += 1
 
       if (index >= list.length) {
-        stopLoop()
-        phaseEndsAtRef.current = null
-        phaseIndexRef.current = Math.max(0, list.length - 1)
-        phaseRemainingRef.current = 0
-        elapsedRef.current = totalDuration(list)
-        setPhaseIndex(Math.max(0, list.length - 1))
-        setPhaseRemaining(0)
-        setElapsedInWorkout(totalDuration(list))
-        setStatus('finished')
-        eventsRef.current.onComplete?.()
+        finishWorkout(list)
         return
       }
 
@@ -190,7 +217,7 @@ export function usePhaseTimer(
     elapsedRef.current = elapsed
     setPhaseRemaining(remaining)
     setElapsedInWorkout(elapsed)
-  }, [stopLoop])
+  }, [finishWorkout])
 
   const tick = useCallback(() => {
     if (statusRef.current !== 'running') return
@@ -201,14 +228,17 @@ export function usePhaseTimer(
   const startLoop = useCallback(() => {
     stopLoop()
     rafRef.current = requestAnimationFrame(tick)
-    // Backup while backgrounded (rAF freezes) — wall clock still advances.
     intervalRef.current = window.setInterval(() => {
       advanceFromWallClock()
     }, 250)
   }, [advanceFromWallClock, stopLoop, tick])
 
   const start = useCallback(async () => {
-    const first = phases[0]
+    const snapshot = phases
+    sessionPhasesRef.current = snapshot
+    sessionRoundsRef.current = totalRounds
+    sessionCyclesRef.current = totalCycles
+    const first = snapshot[0]
     const remaining = first?.duration ?? 0
     setStatus('running')
     setPhaseIndex(0)
@@ -219,9 +249,9 @@ export function usePhaseTimer(
     armPhaseDeadline(remaining)
     startLoop()
     if (first) {
-      eventsRef.current.onStart?.(first, phases[1] ?? null)
+      eventsRef.current.onStart?.(first, snapshot[1] ?? null)
     }
-  }, [armPhaseDeadline, phases, startLoop])
+  }, [armPhaseDeadline, phases, startLoop, totalCycles, totalRounds])
 
   const pause = useCallback(() => {
     advanceFromWallClock()
@@ -231,7 +261,7 @@ export function usePhaseTimer(
   }, [advanceFromWallClock, stopLoop])
 
   const resume = useCallback(async () => {
-    const phaseDuration = phasesRef.current[phaseIndexRef.current]?.duration ?? 0
+    const phaseDuration = sessionPhasesRef.current[phaseIndexRef.current]?.duration ?? 0
     const consumed = phaseDuration - phaseRemainingRef.current
     elapsedAtPhaseStartRef.current = Math.max(0, elapsedRef.current - consumed)
     armPhaseDeadline(phaseRemainingRef.current)
@@ -243,12 +273,66 @@ export function usePhaseTimer(
     resetToIdle()
   }, [resetToIdle])
 
+  const skipPhase = useCallback(() => {
+    if (statusRef.current !== 'running' && statusRef.current !== 'paused') return
+    const list = sessionPhasesRef.current
+    const index = phaseIndexRef.current
+    const current = list[index]
+    if (!current) return
+
+    // Count current phase as completed for elapsed.
+    const consumed = current.duration - phaseRemainingRef.current
+    const elapsedBase = Math.max(0, elapsedRef.current - consumed) + current.duration
+    const nextIndex = index + 1
+
+    if (nextIndex >= list.length) {
+      finishWorkout(list)
+      return
+    }
+
+    const next = list[nextIndex]
+    phaseIndexRef.current = nextIndex
+    phaseRemainingRef.current = next.duration
+    elapsedRef.current = elapsedBase
+    elapsedAtPhaseStartRef.current = elapsedBase
+    lastSecondRef.current = null
+    setPhaseIndex(nextIndex)
+    setPhaseRemaining(next.duration)
+    setElapsedInWorkout(elapsedBase)
+
+    if (statusRef.current === 'running') {
+      armPhaseDeadline(next.duration)
+    } else {
+      phaseEndsAtRef.current = null
+    }
+
+    eventsRef.current.onPhaseChange?.(next, list[nextIndex + 1] ?? null)
+  }, [armPhaseDeadline, finishWorkout])
+
+  const extendPhase = useCallback(
+    (seconds: number) => {
+      if (statusRef.current !== 'running' && statusRef.current !== 'paused') return
+      if (seconds <= 0) return
+      if (statusRef.current === 'running') {
+        advanceFromWallClock()
+      }
+      const next = phaseRemainingRef.current + seconds
+      phaseRemainingRef.current = next
+      setPhaseRemaining(next)
+      // Elapsed decreases relative to phase end — keep base, re-arm deadline.
+      if (statusRef.current === 'running') {
+        armPhaseDeadline(next)
+      }
+      lastSecondRef.current = null
+    },
+    [advanceFromWallClock, armPhaseDeadline],
+  )
+
   useEffect(() => () => stopLoop(), [stopLoop])
 
   useEffect(() => {
     if (status !== 'running') return
     const onVisibility = () => {
-      // Catch up immediately when returning from lock screen / background.
       advanceFromWallClock()
     }
     document.addEventListener('visibilitychange', onVisibility)
@@ -263,7 +347,7 @@ export function usePhaseTimer(
 
   return {
     status,
-    phases,
+    phases: sessionPhases,
     currentPhase,
     nextPhase,
     phaseRemaining,
@@ -271,9 +355,12 @@ export function usePhaseTimer(
     roundsLeft,
     cyclesLeft,
     currentRoundNumber,
+    sessionTotalRounds: status === 'idle' ? totalRounds : sessionRounds,
     start,
     pause,
     resume,
     reset,
+    skipPhase,
+    extendPhase,
   }
 }

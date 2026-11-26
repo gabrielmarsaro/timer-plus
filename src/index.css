@@ -203,7 +203,140 @@ button {
 }
 
 .tabata-screen.is-live {
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+}
+
+.header-brand {
+  margin-bottom: 4px;
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+}
+
+.progress-chip {
+  margin: 6px auto 0;
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  color: #cfcfcf;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.workout-adjust {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 16px 10px;
+  position: relative;
+  z-index: 3;
+}
+
+.adjust-btn {
+  min-width: 96px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: #1c1c1c;
+  color: var(--yellow);
+  border: 1px solid #333;
+  font-weight: 700;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.adjust-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.adjust-btn:active {
+  transform: scale(0.97);
+}
+
+/* First-run coach */
+.coach-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(0, 0, 0, 0.72);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  padding-bottom: calc(20px + var(--safe-bottom));
+}
+
+.coach-card {
+  width: min(420px, 100%);
+  background: #12151c;
+  border: 1px solid #2a3344;
+  border-radius: 20px;
+  padding: 24px 20px 18px;
+  text-align: center;
+}
+
+.coach-card h2 {
+  margin: 4px 0 10px;
+  color: var(--yellow);
+  font-size: 1.55rem;
+  letter-spacing: 0.1em;
+}
+
+.coach-intro {
+  margin: 0 0 14px;
+  color: #a8aebc;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.coach-list {
+  margin: 0 0 16px;
+  padding-left: 20px;
+  text-align: left;
+  color: #e8e8e8;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.coach-list li + li {
+  margin-top: 8px;
+}
+
+.coach-apk {
+  display: block;
+  margin-bottom: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #1a2030;
+  border: 1px solid #2a3344;
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.coach-done {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--accent);
+  color: #0b0e12;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  font-size: 1rem;
+}
+
+.coach-done:active {
+  transform: scale(0.98);
 }
 
 .tabata-screen.is-live .tabata-header {
@@ -1536,6 +1669,27 @@ html[data-allow-rotation='false'] body {
   background: #e8e8e8;
   color: #222;
   box-shadow: inset 0 0 0 1px #ccc;
+}
+
+.app-shell.theme-light .adjust-btn,
+.app-shell.theme-light .progress-chip {
+  background: #e8e8e8;
+  border-color: #ccc;
+  color: #222;
+}
+
+.app-shell.theme-light .coach-card {
+  background: #f7f7f7;
+  border-color: #ddd;
+  color: #111;
+}
+
+.app-shell.theme-light .coach-intro {
+  color: #444;
+}
+
+.app-shell.theme-light .coach-list {
+  color: #222;
 }
 
 .app-shell.theme-light .native-sheet,

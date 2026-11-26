@@ -28,6 +28,9 @@ await new Promise((resolve) => server.listen(5179, '127.0.0.1', resolve))
 
 const browser = await chromium.launch({ headless: true })
 const page = await browser.newPage({ viewport: { width: 390, height: 844 } })
+await page.addInitScript(() => {
+  localStorage.setItem('timer-viking:onboarding-v1', '1')
+})
 await page.goto('http://127.0.0.1:5179/', { waitUntil: 'networkidle' })
 
 // Classic defaults visible on idle: prepare 00:10, work 00:20

@@ -13,16 +13,16 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## iPhone (Safari)
 
-**https://magnetic-lens-tae2w8t.shipstatic.com/**
+**https://liquid-lens-5qfw4ms.shipstatic.com/**
 
 1. Abra no **Safari**.  
 2. Desative o **mute lateral** se quiser alertas sonoros.  
 3. Toque **INICIAR** — o tempo aparece em **A reproduzir** na tela bloqueada.  
 4. **Compartilhar** → **Adicionar à Tela de Início**.
 
-## Android (APK) — versão **1.5.1**
+## Android (APK) — versão **1.5.2**
 
-**https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/eecad61fd53045c35cb06c08c3ef40a4dbf678ae/releases/timer-plus-debug.apk**
+**https://github.com/gabrielmarsaro/timer-plus/raw/main/releases/timer-plus-debug.apk?v=1.5.2**
 
 1. Baixe no Chrome.  
 2. Permita **fontes desconhecidas** se pedir.  
@@ -30,7 +30,13 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
 
-Página de download: https://magnetic-lens-tae2w8t.shipstatic.com/baixar.html
+Página de download: https://liquid-lens-5qfw4ms.shipstatic.com/baixar.html
+
+## Novidades 1.5.2
+
+- **Pular** fase e **+15s** no meio do treino
+- Mudar de aba / editar **não mata** a sessão ativa
+- Onboarding na 1.ª abertura (mute / A2HS / APK)
 
 ## Identidade
 

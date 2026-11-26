@@ -3,6 +3,7 @@ import { StatusBar, Style } from '@capacitor/status-bar'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { BottomNav } from './components/BottomNav'
 import { GeneralSettingsModal } from './components/GeneralSettingsModal'
+import { FirstRunCoach } from './components/FirstRunCoach'
 import { IosAudioTip } from './components/IosAudioTip'
 import { MoreScreen } from './components/MoreScreen'
 import { RoundsScreen } from './components/RoundsScreen'
@@ -114,6 +115,13 @@ export default function App() {
   const [workoutEditOpen, setWorkoutEditOpen] = useState(false)
   const [screenFlash, setScreenFlash] = useState(false)
   const [iosAudioTip, setIosAudioTip] = useState(false)
+  const [coachOpen, setCoachOpen] = useState(() => {
+    try {
+      return localStorage.getItem('timer-viking:onboarding-v1') !== '1'
+    } catch {
+      return true
+    }
+  })
 
   const flashScreen = useCallback(() => {
     if (!generalSettings.screenFlash) return
@@ -363,20 +371,10 @@ export default function App() {
     [rounds, stopwatch, tabata],
   )
 
-  const selectTab = useCallback(
-    (next: Tab) => {
-      if (next !== tab) {
-        if (next !== 'tabata' && tabata.status !== 'idle') {
-          tabata.reset()
-          stopWorkoutMusic()
-        }
-        if (next !== 'rounds' && rounds.status !== 'idle') rounds.reset()
-        if (next !== 'stopwatch' && stopwatch.status !== 'idle') stopwatch.reset()
-      }
-      setTab(next)
-    },
-    [rounds, stopwatch, tab, tabata],
-  )
+  /** Navegar não destrói o treino — só INICIAR noutro modo para os outros. */
+  const selectTab = useCallback((next: Tab) => {
+    setTab(next)
+  }, [])
 
   const makeToggle =
     (timer: typeof tabata, kind: 'tabata' | 'rounds') =>
@@ -444,12 +442,22 @@ export default function App() {
             totalRemaining={tabata.totalRemaining}
             roundsLeft={tabata.roundsLeft}
             cyclesLeft={tabata.cyclesLeft}
+            currentRoundNumber={tabata.currentRoundNumber}
+            totalRounds={tabata.sessionTotalRounds}
             idleWorkDuration={tabataSettings.work}
             timeFormat={generalSettings.timeFormat}
             onOpenGeneralSettings={() => setGeneralOpen(true)}
             onOpenWorkoutEdit={() => setWorkoutEditOpen(true)}
             onToggle={makeToggle(tabata, 'tabata')}
             onReset={tabata.reset}
+            onSkip={() => {
+              unlockFeedback()
+              tabata.skipPhase()
+            }}
+            onExtend={() => {
+              unlockFeedback()
+              tabata.extendPhase(15)
+            }}
           />
         )}
 
@@ -461,6 +469,8 @@ export default function App() {
             phaseRemaining={rounds.phaseRemaining}
             totalRemaining={rounds.totalRemaining}
             roundsLeft={rounds.roundsLeft}
+            currentRoundNumber={rounds.currentRoundNumber}
+            totalRounds={rounds.sessionTotalRounds}
             idlePrepare={roundsSettings.prepare}
             idleRoundDuration={roundsSettings.round}
             timeFormat={generalSettings.timeFormat}
@@ -468,6 +478,14 @@ export default function App() {
             onOpenWorkoutEdit={() => setWorkoutEditOpen(true)}
             onToggle={makeToggle(rounds, 'rounds')}
             onReset={rounds.reset}
+            onSkip={() => {
+              unlockFeedback()
+              rounds.skipPhase()
+            }}
+            onExtend={() => {
+              unlockFeedback()
+              rounds.extendPhase(15)
+            }}
           />
         )}
 
@@ -497,6 +515,18 @@ export default function App() {
 
       <IosAudioTip open={iosAudioTip} onClose={() => setIosAudioTip(false)} />
 
+      <FirstRunCoach
+        open={coachOpen}
+        onClose={() => {
+          try {
+            localStorage.setItem('timer-viking:onboarding-v1', '1')
+          } catch {
+            // ignore
+          }
+          setCoachOpen(false)
+        }}
+      />
+
       {generalOpen ? (
         <GeneralSettingsModal
           open={generalOpen}
@@ -513,13 +543,19 @@ export default function App() {
           settings={tab === 'rounds' ? roundsSettings : tabataSettings}
           onClose={() => setWorkoutEditOpen(false)}
           onSave={(next) => {
+            // Guarda sempre; só reinicia se não houver sessão a meio
+            // (a sessão ativa mantém as fases congeladas até reset).
             if (tab === 'rounds') {
-              rounds.reset()
               setRoundsSettings(next as RoundsSettings)
+              if (rounds.status === 'idle' || rounds.status === 'finished') {
+                rounds.reset()
+              }
               return
             }
-            tabata.reset()
             setTabataSettings(next as TabataSettings)
+            if (tabata.status === 'idle' || tabata.status === 'finished') {
+              tabata.reset()
+            }
           }}
         />
       ) : null}
