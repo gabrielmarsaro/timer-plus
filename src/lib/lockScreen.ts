@@ -5,11 +5,13 @@ import { formatTime } from './format'
  * iPhone Safari / PWA Now Playing + Android Capgo MediaSession.
  *
  * Safari needs a playing HTMLAudioElement (with audioSession "playback") to
- * keep Now Playing on the lock screen. We loop lock-keepalive.wav at volume 0
- * so there is no audible hum — Media Session metadata still carries the time.
+ * keep Now Playing on the lock screen. We loop a true-silent WAV (all zero
+ * samples) at volume 0. Do not use a near-silent tone — iOS still bleeds it
+ * as a hiss even at volume 0. Avoid muted=true (drops Now Playing on iOS).
  */
 
-const KEEP_ALIVE_SRC = `${import.meta.env.BASE_URL}lock-keepalive.wav`
+/** v2 = true silence (all-zero samples). Bump when replacing the asset. */
+const KEEP_ALIVE_SRC = `${import.meta.env.BASE_URL}lock-keepalive.wav?v=silent2`
 
 let audio: HTMLAudioElement | null = null
 let metaTimer: number | null = null
@@ -53,7 +55,7 @@ function ensureAudio(): HTMLAudioElement | null {
     const el = new Audio(KEEP_ALIVE_SRC)
     el.loop = true
     el.preload = 'auto'
-    // Volume 0 = inaudible. Do not set muted=true — that drops Now Playing on iOS.
+    // Volume 0 + silent file. Do not set muted=true — that drops Now Playing on iOS.
     el.volume = 0
     el.muted = false
     el.setAttribute('playsinline', 'true')
@@ -64,6 +66,8 @@ function ensureAudio(): HTMLAudioElement | null {
     ;(el as HTMLAudioElement & { disableRemotePlayback?: boolean }).disableRemotePlayback = false
     // Attaching to DOM improves Now Playing reliability on iOS Safari.
     document.body.appendChild(el)
+    // Cache-bust if an older noisy keepalive was cached by Safari.
+    el.load()
     audio = el
     return el
   } catch {
@@ -286,6 +290,9 @@ export function syncLockScreen(
 
   const el = ensureAudio()
   if (el) {
+    // Re-assert silence every sync — some WebKit builds nudge volume up.
+    el.volume = 0
+    el.muted = false
     if (payload.running && el.paused) {
       void el.play().catch(() => undefined)
     }

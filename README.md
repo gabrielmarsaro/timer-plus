@@ -13,14 +13,14 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## iPhone (Safari)
 
-**https://chrome-glow-rj4aw4t.shipstatic.com/**
+**https://chrome-light-65fm6ne.shipstatic.com/**
 
 1. Abra no **Safari**.  
 2. Desative o **mute lateral** se quiser alertas sonoros.  
 3. Toque **INICIAR** — o tempo aparece em **A reproduzir** na tela bloqueada.  
 4. **Compartilhar** → **Adicionar à Tela de Início**.
 
-## Android (APK) — versão **1.5.4**
+## Android (APK) — versão **1.5.5**
 
 **https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/82fc6bdbfc4e63b7ff87bdd2c97b221acdee7887/releases/timer-plus-debug.apk**
 
@@ -30,9 +30,9 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
 
-Página de download: https://chrome-glow-rj4aw4t.shipstatic.com/baixar.html
+Página de download: https://chrome-light-65fm6ne.shipstatic.com/baixar.html
 
-## Novidades 1.5.4
+## Novidades 1.5.5
 
 - **Pular** fase e **+15s** no meio do treino
 - Mudar de aba / editar **não mata** a sessão ativa
