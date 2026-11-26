@@ -26,8 +26,12 @@ const media = await page.evaluate(async () => {
 })
 
 if (!media.hasSession) throw new Error('Media Session missing')
-if (!media.title || !/\d/.test(media.title)) {
-  throw new Error(`Expected time in Now Playing title, got: ${JSON.stringify(media)}`)
+// Title must be digits-only (no progress-bar context); phase lives on artist.
+if (!media.title || !/^\d{1,2}:\d{2}/.test(media.title) || media.title.includes('·')) {
+  throw new Error(`Expected digits-only title, got: ${JSON.stringify(media)}`)
+}
+if (!media.artist || !/[A-Za-zÀ-ú]/.test(media.artist)) {
+  throw new Error(`Expected phase on artist line, got: ${JSON.stringify(media)}`)
 }
 if (media.playback !== 'playing') {
   throw new Error(`Expected playback playing, got ${media.playback}`)

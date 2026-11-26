@@ -16,11 +16,13 @@ const KEEP_ALIVE_SRC = `${import.meta.env.BASE_URL}lock-keepalive.wav?v=silent2`
 let audio: HTMLAudioElement | null = null
 let metaTimer: number | null = null
 let handlersWired = false
+let artworkCacheKey = ''
 let artworkUrl: string | null = null
 let lastFingerprint = ''
 let latestPayload: LockScreenPayload | null = null
 let actionCallback: ((action: LockScreenAction) => void) | null = null
 let visibilityWired = false
+let positionCleared = false
 
 export interface LockScreenPayload {
   mode: 'tabata' | 'rounds' | 'stopwatch'
@@ -75,36 +77,77 @@ function ensureAudio(): HTMLAudioElement | null {
   }
 }
 
-function ensureArtwork(): string {
-  if (artworkUrl) return artworkUrl
+/**
+ * Big countdown digits on the Now Playing cover — that's the largest visual
+ * on the iPhone lock screen. Regenerated whenever the time/phase changes.
+ */
+function artworkFor(payload: LockScreenPayload): string {
+  const timeText =
+    payload.mode === 'stopwatch'
+      ? formatStopwatchSeconds(payload.seconds)
+      : formatTime(payload.seconds, 'mmss')
+  const phase = (payload.phaseLabel || 'TIMER').toUpperCase()
+  const cacheKey = `${timeText}|${phase}|${payload.paused ? 'p' : 'r'}`
+  if (artworkUrl && artworkCacheKey === cacheKey) return artworkUrl
+
   try {
     const canvas = document.createElement('canvas')
     canvas.width = 512
     canvas.height = 512
     const ctx = canvas.getContext('2d')
-    if (!ctx) return ''
-    ctx.fillStyle = '#0B0E12'
+    if (!ctx) return artworkUrl ?? ''
+
+    ctx.fillStyle = '#0A0C10'
     ctx.fillRect(0, 0, 512, 512)
-    ctx.fillStyle = '#D4A017'
-    ctx.beginPath()
-    // Shield silhouette
-    ctx.moveTo(256, 64)
-    ctx.lineTo(400, 120)
-    ctx.lineTo(400, 280)
-    ctx.quadraticCurveTo(400, 380, 256, 448)
-    ctx.quadraticCurveTo(112, 380, 112, 280)
-    ctx.lineTo(112, 120)
-    ctx.closePath()
-    ctx.fill()
-    ctx.fillStyle = '#0B0E12'
-    ctx.font = 'bold 110px system-ui, sans-serif'
+
+    // Soft phase wash
+    const wash = ctx.createRadialGradient(256, 220, 40, 256, 240, 280)
+    wash.addColorStop(0, payload.paused ? 'rgba(140,146,163,0.22)' : 'rgba(240,180,41,0.28)')
+    wash.addColorStop(1, 'rgba(10,12,16,0)')
+    ctx.fillStyle = wash
+    ctx.fillRect(0, 0, 512, 512)
+
+    ctx.fillStyle = '#F0B429'
+    ctx.font = '700 42px Outfit, system-ui, sans-serif'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillText('TV', 256, 268)
+    ctx.fillText(phase.slice(0, 18), 256, 150)
+
+    // Digits dominate the cover
+    const digitSize = timeText.length > 5 ? 118 : 148
+    ctx.fillStyle = '#F5F2EA'
+    ctx.font = `800 ${digitSize}px Outfit, system-ui, sans-serif`
+    ctx.fillText(timeText, 256, 280)
+
+    ctx.fillStyle = '#8A92A3'
+    ctx.font = '600 28px Outfit, system-ui, sans-serif'
+    ctx.fillText(payload.paused ? 'PAUSADO' : 'TIMER VIKING', 256, 390)
+
+    artworkCacheKey = cacheKey
     artworkUrl = canvas.toDataURL('image/png')
     return artworkUrl
   } catch {
-    return ''
+    return artworkUrl ?? ''
+  }
+}
+
+/** Hide the Now Playing scrubber — user wants digits, not a progress bar. */
+function clearPositionBar(): void {
+  if (positionCleared) return
+  positionCleared = true
+  try {
+    // Empty object / omitting duration removes the scrubber on most WebKit builds.
+    navigator.mediaSession?.setPositionState?.()
+  } catch {
+    try {
+      navigator.mediaSession?.setPositionState?.({
+        duration: Number.POSITIVE_INFINITY,
+        position: 0,
+        playbackRate: 1,
+      })
+    } catch {
+      // ignore
+    }
   }
 }
 
@@ -128,17 +171,17 @@ function buildLabels(payload: LockScreenPayload): { title: string; artist: strin
   if (payload.mode === 'stopwatch') {
     return {
       title: timeText,
-      artist: 'Cronómetro · Timer Viking',
+      artist: payload.paused ? 'Pausado · Cronómetro' : 'Cronómetro',
       album: 'Timer Viking',
     }
   }
 
-  const phase = payload.phaseLabel || 'Timer Viking'
-  // Time first — lock screen Now Playing shows title largest on iPhone.
+  const phase = payload.phaseLabel || 'Treino'
+  // Title = digits only (largest text in the widget). Phase goes on artist.
   return {
-    title: `${timeText} · ${phase}`,
-    artist: payload.paused ? 'Pausado · Timer Viking' : 'Timer Viking',
-    album: payload.mode === 'tabata' ? 'Tabata' : 'Rondas',
+    title: timeText,
+    artist: payload.paused ? `${phase} · Pausado` : phase,
+    album: payload.mode === 'tabata' ? 'Tabata · Timer Viking' : 'Rondas · Timer Viking',
   }
 }
 
@@ -167,7 +210,7 @@ function pushWebSession(payload: LockScreenPayload): void {
   if (!('mediaSession' in navigator)) return
   const { title, artist, album } = buildLabels(payload)
   try {
-    const art = ensureArtwork()
+    const art = artworkFor(payload)
     navigator.mediaSession.metadata = new MediaMetadata({
       title,
       artist,
@@ -180,16 +223,7 @@ function pushWebSession(payload: LockScreenPayload): void {
         : [],
     })
     navigator.mediaSession.playbackState = payload.paused ? 'paused' : 'playing'
-    const duration = Math.max(1, payload.durationSeconds ?? Math.max(1, payload.seconds))
-    const position =
-      payload.mode === 'stopwatch'
-        ? Math.min(duration, payload.seconds)
-        : Math.max(0, duration - payload.seconds)
-    navigator.mediaSession.setPositionState?.({
-      duration,
-      position: Math.min(duration, Math.max(0, position)),
-      playbackRate: 1,
-    })
+    clearPositionBar()
   } catch {
     // ignore
   }
@@ -197,8 +231,8 @@ function pushWebSession(payload: LockScreenPayload): void {
 
 async function pushNativeSession(payload: LockScreenPayload): Promise<void> {
   const { title, artist, album } = buildLabels(payload)
-  const art = ensureArtwork()
-  const fingerprint = `${title}|${artist}|${payload.running}|${payload.paused}`
+  const art = artworkFor(payload)
+  const fingerprint = `${title}|${artist}|${art.slice(0, 48)}|${payload.paused ? 1 : 0}`
   await wireHandlers()
   if (fingerprint !== lastFingerprint) {
     lastFingerprint = fingerprint
@@ -214,20 +248,7 @@ async function pushNativeSession(payload: LockScreenPayload): Promise<void> {
         : undefined,
     })
   }
-  const duration = Math.max(1, payload.durationSeconds ?? Math.max(1, payload.seconds))
-  const position =
-    payload.mode === 'stopwatch'
-      ? Math.min(duration, payload.seconds)
-      : Math.max(0, duration - payload.seconds)
-  try {
-    await MediaSession.setPositionState({
-      duration,
-      position: Math.min(duration, Math.max(0, position)),
-      playbackRate: 1,
-    })
-  } catch {
-    // ignore
-  }
+  // Intentionally no setPositionState — that draws the scrubber bar.
   await MediaSession.setPlaybackState({
     playbackState: payload.paused ? 'paused' : 'playing',
   })
@@ -319,6 +340,9 @@ export function primeLockScreenAudio(): void {
 export async function stopLockScreen(): Promise<void> {
   latestPayload = null
   lastFingerprint = ''
+  artworkCacheKey = ''
+  artworkUrl = null
+  positionCleared = false
   actionCallback = null
   if (metaTimer !== null) {
     window.clearInterval(metaTimer)
@@ -344,6 +368,11 @@ export async function stopLockScreen(): Promise<void> {
       navigator.mediaSession.setActionHandler('pause', null)
       navigator.mediaSession.setActionHandler('play', null)
       navigator.mediaSession.setActionHandler('stop', null)
+      try {
+        navigator.mediaSession.setPositionState?.()
+      } catch {
+        // ignore
+      }
     } catch {
       // ignore
     }
