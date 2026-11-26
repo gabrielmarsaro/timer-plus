@@ -1,11 +1,13 @@
 import { formatTime, type TimeFormat } from '../lib/format'
 import type { TimerStatus } from '../hooks/usePhaseTimer'
+import { PHASE_COLORS } from '../types'
 import type { Phase } from '../types'
 import {
   GearIcon,
   PauseIcon,
   PlayIcon,
   ResetIcon,
+  SkipIcon,
   TimerMiniIcon,
 } from './Icons'
 import { isPhaseFocusKind, PhaseHero } from './PhaseHero'
@@ -18,12 +20,16 @@ interface TabataScreenProps {
   totalRemaining: number
   roundsLeft: number
   cyclesLeft: number
+  currentRoundNumber: number
+  totalRounds: number
   idleWorkDuration: number
   timeFormat: TimeFormat
   onOpenGeneralSettings: () => void
   onOpenWorkoutEdit: () => void
   onToggle: () => void
   onReset: () => void
+  onSkip: () => void
+  onExtend: () => void
 }
 
 export function TabataScreen({
@@ -34,12 +40,16 @@ export function TabataScreen({
   totalRemaining,
   roundsLeft,
   cyclesLeft,
+  currentRoundNumber,
+  totalRounds,
   idleWorkDuration,
   timeFormat,
   onOpenGeneralSettings,
   onOpenWorkoutEdit,
   onToggle,
   onReset,
+  onSkip,
+  onExtend,
 }: TabataScreenProps) {
   const isLive = status === 'running' || status === 'paused'
   const focus = isLive && isPhaseFocusKind(currentPhase?.kind)
@@ -49,13 +59,13 @@ export function TabataScreen({
       ? {
           label: 'PREPARAR',
           time: formatTime(phaseRemaining, timeFormat),
-          color: '#f5e600',
+          color: PHASE_COLORS.prepare,
           key: 'idle-prepare',
         }
       : {
           label: currentPhase?.label ?? 'PREPARAR',
           time: formatTime(phaseRemaining, timeFormat),
-          color: currentPhase?.color ?? '#f5e600',
+          color: currentPhase?.color ?? PHASE_COLORS.prepare,
           key: [
             currentPhase?.kind ?? 'prepare',
             currentPhase?.round ?? 0,
@@ -68,7 +78,7 @@ export function TabataScreen({
       ? {
           label: 'EXERCÍCIO',
           time: formatTime(idleWorkDuration, timeFormat),
-          color: '#9dff4a',
+          color: PHASE_COLORS.work,
         }
       : nextPhase
         ? {
@@ -79,7 +89,7 @@ export function TabataScreen({
         : {
             label: 'FIM',
             time: formatTime(0, timeFormat),
-            color: '#333333',
+            color: PHASE_COLORS.done,
           }
 
   const isRunning = status === 'running'
@@ -99,8 +109,14 @@ export function TabataScreen({
         </button>
 
         <div className="header-center">
+          <p className="brand-mark header-brand">TIMER VIKING</p>
           <h1>TABATA</h1>
           <p className="total-time">{formatTime(totalRemaining, timeFormat)}</p>
+          {isLive ? (
+            <p className="progress-chip">
+              RONDA {currentRoundNumber}/{totalRounds}
+            </p>
+          ) : null}
         </div>
 
         <div className="header-right">
@@ -125,6 +141,18 @@ export function TabataScreen({
       </header>
 
       <PhaseHero focus={focus} primary={primary} secondary={secondary} />
+
+      {isLive ? (
+        <div className="workout-adjust" role="group" aria-label="Ajustes do treino">
+          <button type="button" className="adjust-btn" onClick={onExtend}>
+            +15s
+          </button>
+          <button type="button" className="adjust-btn" onClick={onSkip}>
+            <SkipIcon />
+            PULAR
+          </button>
+        </div>
+      ) : null}
 
       <div className={`controls-row${focus ? ' is-live' : ''}`}>
         <div className="stat-block">

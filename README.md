@@ -1,4 +1,4 @@
-# Timer Plus
+# Timer Viking
 
 Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
@@ -13,15 +13,16 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## iPhone (Safari)
 
-**https://clear-outpost-q395snq.shipstatic.com**
+**https://luminous-rune-4ecwa6s.shipstatic.com/**
 
 1. Abra no **Safari**.  
-2. Desative o **mute lateral** e aumente o volume.  
-3. **Compartilhar** → **Adicionar à Tela de Início**.
+2. Desative o **mute lateral** se quiser alertas sonoros.  
+3. Toque **INICIAR** — o tempo aparece em **A reproduzir** na tela bloqueada.  
+4. **Compartilhar** → **Adicionar à Tela de Início**.
 
-## Android (APK) — versão **1.2.0**
+## Android (APK) — versão **1.5.2**
 
-**https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/9041fa65f02cdd3ad961066fab49fb18d85d7b20/releases/timer-plus-debug.apk**
+**https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/5b102543d7a64ac2fefd9ff23b19fe10b670451b/releases/timer-plus-debug.apk**
 
 1. Baixe no Chrome.  
 2. Permita **fontes desconhecidas** se pedir.  
@@ -29,7 +30,27 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
 
-Página de download: https://clear-outpost-q395snq.shipstatic.combaixar.html
+Página de download: https://luminous-rune-4ecwa6s.shipstatic.com/baixar.html
+
+## Novidades 1.5.2
+
+- **Pular** fase e **+15s** no meio do treino
+- Mudar de aba / editar **não mata** a sessão ativa
+- Onboarding na 1.ª abertura (mute / A2HS / APK)
+
+## Identidade
+
+**Timer Viking** — forja nórdica: carvão, ouro no esforço, gelo no descanso.
+
+## Tabata (protocolo)
+
+Padrão clássico: **preparar → (20s esforço / 10s pausa) × 8 rondas → cooldown**, com **descanso entre ciclos** se houver mais de 1 ciclo.  
+No editor: botão **PRESET CLÁSSICO 20/10 × 8**.
+
+## Música Tabata
+
+Trilha **própria** (só na aba Tabata): **TABATA 160** / **HIIT 140** / **POWER 150**.  
+A batida muda por fase, com cues **GO / REST** e **3-2-1**.
 
 ## Entrega em todas as plataformas
 
@@ -45,4 +66,7 @@ npm run android:apk
 npm run smoke
 node scripts/smoke-focus.mjs
 node scripts/smoke-stopwatch.mjs
+node scripts/smoke-music.mjs
+node scripts/smoke-lockscreen.mjs
+node scripts/smoke-wheel.mjs
 ```

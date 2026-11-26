@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
 
 const config: CapacitorConfig = {
   appId: 'com.timerplus.app',
-  appName: 'Timer Plus',
+  appName: 'Timer Viking',
   webDir: 'dist',
   server: {
     androidScheme: 'https',

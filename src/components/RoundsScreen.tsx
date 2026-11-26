@@ -1,11 +1,13 @@
 import { formatTime, type TimeFormat } from '../lib/format'
 import type { TimerStatus } from '../hooks/usePhaseTimer'
+import { PHASE_COLORS } from '../types'
 import type { Phase } from '../types'
 import {
   GearIcon,
   PauseIcon,
   PlayIcon,
   ResetIcon,
+  SkipIcon,
   TimerMiniIcon,
 } from './Icons'
 import { isPhaseFocusKind, PhaseHero } from './PhaseHero'
@@ -17,6 +19,8 @@ interface RoundsScreenProps {
   phaseRemaining: number
   totalRemaining: number
   roundsLeft: number
+  currentRoundNumber: number
+  totalRounds: number
   idlePrepare: number
   idleRoundDuration: number
   timeFormat: TimeFormat
@@ -24,6 +28,8 @@ interface RoundsScreenProps {
   onOpenWorkoutEdit: () => void
   onToggle: () => void
   onReset: () => void
+  onSkip: () => void
+  onExtend: () => void
 }
 
 export function RoundsScreen({
@@ -33,6 +39,8 @@ export function RoundsScreen({
   phaseRemaining,
   totalRemaining,
   roundsLeft,
+  currentRoundNumber,
+  totalRounds,
   idlePrepare,
   idleRoundDuration,
   timeFormat,
@@ -40,6 +48,8 @@ export function RoundsScreen({
   onOpenWorkoutEdit,
   onToggle,
   onReset,
+  onSkip,
+  onExtend,
 }: RoundsScreenProps) {
   const isLive = status === 'running' || status === 'paused'
   const focus = isLive && isPhaseFocusKind(currentPhase?.kind)
@@ -49,13 +59,13 @@ export function RoundsScreen({
       ? {
           label: 'PREPARAR',
           time: formatTime(idlePrepare, timeFormat),
-          color: '#f5e600',
+          color: PHASE_COLORS.prepare,
           key: 'idle-prepare',
         }
       : {
           label: currentPhase?.label ?? 'PREPARAR',
           time: formatTime(phaseRemaining, timeFormat),
-          color: currentPhase?.color ?? '#f5e600',
+          color: currentPhase?.color ?? PHASE_COLORS.prepare,
           key: [
             currentPhase?.kind ?? 'prepare',
             currentPhase?.round ?? 0,
@@ -68,7 +78,7 @@ export function RoundsScreen({
       ? {
           label: 'EXERCÍCIO',
           time: formatTime(idleRoundDuration, timeFormat),
-          color: '#9dff4a',
+          color: PHASE_COLORS.work,
         }
       : nextPhase
         ? {
@@ -79,7 +89,7 @@ export function RoundsScreen({
         : {
             label: 'FIM',
             time: formatTime(0, timeFormat),
-            color: '#333333',
+            color: PHASE_COLORS.done,
           }
 
   const isRunning = status === 'running'
@@ -99,8 +109,14 @@ export function RoundsScreen({
         </button>
 
         <div className="header-center">
+          <p className="brand-mark header-brand">TIMER VIKING</p>
           <h1>RONDAS</h1>
           <p className="total-time">{formatTime(totalRemaining, timeFormat)}</p>
+          {isLive ? (
+            <p className="progress-chip">
+              RONDA {currentRoundNumber}/{totalRounds}
+            </p>
+          ) : null}
         </div>
 
         <div className="header-right">
@@ -125,6 +141,18 @@ export function RoundsScreen({
       </header>
 
       <PhaseHero focus={focus} primary={primary} secondary={secondary} />
+
+      {isLive ? (
+        <div className="workout-adjust" role="group" aria-label="Ajustes do treino">
+          <button type="button" className="adjust-btn" onClick={onExtend}>
+            +15s
+          </button>
+          <button type="button" className="adjust-btn" onClick={onSkip}>
+            <SkipIcon />
+            PULAR
+          </button>
+        </div>
+      ) : null}
 
       <div className={`controls-row controls-row-rounds${focus ? ' is-live' : ''}`}>
         <div className="stat-block">

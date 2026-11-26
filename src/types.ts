@@ -21,6 +21,9 @@ export interface RoundsSettings {
   warning: number
 }
 
+/** Trilhas próprias do app (Web Audio) — só no Tabata. */
+export type WorkoutMusicTrack = 'pulse' | 'drive' | 'storm'
+
 export interface GeneralSettings {
   soundEffect: boolean
   soundType: 'censor' | 'beep' | 'bell'
@@ -28,6 +31,9 @@ export interface GeneralSettings {
   voiceAssistant: boolean
   voice: 'luciana' | 'sistema'
   ducking: boolean
+  /** Nossa música Tabata (batidas do app). */
+  workoutMusic: boolean
+  workoutMusicTrack: WorkoutMusicTrack
   ticking: boolean
   vibration: boolean
   flashlight: boolean
@@ -46,15 +52,19 @@ export interface Phase {
   cycle?: number
 }
 
+/** Protocolo clássico Izumi Tabata: 20s esforço / 10s pausa × 8 = 4 min (+ preparar/cooldown). */
 export const DEFAULT_SETTINGS: TabataSettings = {
   prepare: 10,
-  work: 900,
+  work: 20,
   rest: 10,
-  rounds: 3,
+  rounds: 8,
   cycles: 1,
-  cycleRest: 0,
-  cooldown: 0,
+  cycleRest: 60,
+  cooldown: 20,
 }
+
+/** Preset clássico (útil no editor). */
+export const CLASSIC_TABATA_PRESET: TabataSettings = { ...DEFAULT_SETTINGS }
 
 export const DEFAULT_ROUNDS_SETTINGS: RoundsSettings = {
   prepare: 15,
@@ -71,6 +81,8 @@ export const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   voiceAssistant: true,
   voice: 'luciana',
   ducking: true,
+  workoutMusic: true,
+  workoutMusicTrack: 'pulse',
   ticking: true,
   vibration: true,
   flashlight: false,
@@ -80,13 +92,14 @@ export const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   timeFormat: 'mmss',
 }
 
+/** Timer Viking — forja nórdica: ouro no esforço, gelo no descanso. */
 export const PHASE_COLORS: Record<PhaseKind, string> = {
-  prepare: '#f5e600',
-  work: '#9dff4a',
-  rest: '#4ad2ff',
-  cycleRest: '#ff9f4a',
-  cooldown: '#c08cff',
-  done: '#222222',
+  prepare: '#E8D5A3',
+  work: '#D4A017',
+  rest: '#6EC6D4',
+  cycleRest: '#C45C26',
+  cooldown: '#7B8CDE',
+  done: '#151A24',
 }
 
 export const PHASE_LABELS: Record<PhaseKind, string> = {

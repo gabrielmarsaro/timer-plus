@@ -47,6 +47,15 @@ export function PauseIcon(props: IconProps) {
   )
 }
 
+export function SkipIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+      <path d="M5.5 6.7c0-.9 1-1.5 1.8-1L14 11c.8.5.8 1.6 0 2.1L7.3 18.2c-.8.5-1.8-.1-1.8-1V6.7Z" />
+      <rect x="16.2" y="5.5" width="2.4" height="13" rx="1" />
+    </svg>
+  )
+}
+
 export function TabataNavIcon(props: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>

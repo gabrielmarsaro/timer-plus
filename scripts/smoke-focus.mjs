@@ -4,6 +4,8 @@ const browser = await chromium.launch({ headless: true })
 const page = await browser.newPage({ viewport: { width: 390, height: 844 } })
 
 await page.addInitScript(() => {
+  localStorage.setItem('timer-viking:onboarding-v1', '1')
+
   localStorage.setItem(
     'timer-plus:tabata-settings',
     JSON.stringify({

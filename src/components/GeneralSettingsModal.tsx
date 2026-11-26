@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { TIME_FORMATS } from '../lib/format'
-import { previewSound, previewVoice } from '../lib/feedback'
+import { previewSound, previewVoice, unlockFeedback } from '../lib/feedback'
+import { previewWorkoutTrack, WORKOUT_TRACKS } from '../lib/workoutMusic'
 import type { GeneralSettings } from '../types'
 
 interface GeneralSettingsModalProps {
@@ -139,8 +140,8 @@ export function GeneralSettingsModal({
           <div>
             <span>RESPEITAR MÚSICA</span>
             <small>
-              SE SPOTIFY/DEEZER/YOUTUBE ESTIVER TOCANDO, TIRA O TIQUE-TAQUE E DEIXA SÓ ALERTAS DE
-              INÍCIO/FIM
+              SE SPOTIFY/DEEZER/YOUTUBE ESTIVER TOCANDO, TIRA O TIQUE-TAQUE E A BATIDA DO APP —
+              DEIXA SÓ ALERTAS DE INÍCIO/FIM
             </small>
           </div>
           <button
@@ -150,6 +151,52 @@ export function GeneralSettingsModal({
             onClick={() => toggle('ducking')}
           />
         </label>
+
+        <label className="native-row native-row-stack">
+          <div>
+            <span>NOSSA MÚSICA TABATA</span>
+            <small>
+              SÓ NO TABATA. SILÊNCIO NO PREPARAR; BATIDA NO ESFORÇO/PAUSA/CICLO/COOLDOWN. CUES GO,
+              REST E 3-2-1 — SEM TIC-TAC EM CIMA.
+            </small>
+          </div>
+          <button
+            type="button"
+            className={`toggle${draft.workoutMusic ? ' is-on' : ''}`}
+            aria-pressed={draft.workoutMusic}
+            onClick={() => {
+              const enabled = !draft.workoutMusic
+              update({ workoutMusic: enabled })
+              if (enabled) {
+                window.setTimeout(() => {
+                  unlockFeedback()
+                  previewWorkoutTrack(draft.workoutMusicTrack)
+                }, 60)
+              }
+            }}
+          />
+        </label>
+
+        {draft.workoutMusic ? (
+          <button
+            type="button"
+            className="native-row native-link"
+            onClick={() => {
+              const idx = WORKOUT_TRACKS.findIndex((item) => item.id === draft.workoutMusicTrack)
+              const next = WORKOUT_TRACKS[(idx + 1) % WORKOUT_TRACKS.length]!
+              update({ workoutMusicTrack: next.id })
+              window.setTimeout(() => {
+                unlockFeedback()
+                previewWorkoutTrack(next.id)
+              }, 60)
+            }}
+          >
+            <span>FAIXA</span>
+            <span className="native-value">
+              {WORKOUT_TRACKS.find((item) => item.id === draft.workoutMusicTrack)?.label} ›
+            </span>
+          </button>
+        ) : null}
 
         <label className="native-row">
           <span>SOM DE TIQUE-TAQUE</span>
@@ -235,7 +282,7 @@ export function GeneralSettingsModal({
           </span>
         </button>
 
-        <p className="native-version">VERSÃO: 1.1.0</p>
+        <p className="native-version">VERSÃO: 1.3.0</p>
       </div>
     </div>
   )
