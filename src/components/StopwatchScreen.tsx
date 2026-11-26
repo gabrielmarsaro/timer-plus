@@ -98,7 +98,7 @@ export function StopwatchScreen({
           label={actionLabel}
           running={isRunning}
           progress={1}
-          ringColor="var(--accent)"
+          ringColor={isLive ? 'var(--accent)' : 'rgba(255,255,255,0.18)'}
           onClick={onToggle}
         >
           {isRunning ? <PauseIcon /> : <PlayIcon className="play-glyph" />}

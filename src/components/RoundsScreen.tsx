@@ -185,7 +185,7 @@ export function RoundsScreen({
           label={actionLabel}
           running={isRunning}
           progress={isLive ? progress : 1}
-          ringColor={isLive ? phaseColor : 'var(--accent)'}
+          ringColor={isLive ? phaseColor : 'rgba(255,255,255,0.18)'}
           onClick={onToggle}
         >
           {isRunning ? <PauseIcon /> : <PlayIcon className="play-glyph" />}
