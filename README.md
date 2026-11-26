@@ -13,7 +13,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## iPhone (Safari)
 
-**https://noisy-lumen-7harg2k.shipstatic.com/**
+**https://edgy-logic-austz44.shipstatic.com**
 
 1. Abra no **Safari**.  
 2. Desative o **mute lateral** se quiser alertas sonoros.  
@@ -22,7 +22,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## Android (APK) — versão **1.5.8**
 
-**https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/47456c4e42bcc76939085c7423b2bd601447b63a/releases/timer-plus-debug.apk**
+**https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/48e4286f8ec35f75b66c1e822696caa6ae0dc6c4/releases/timer-plus-debug.apk**
 
 1. Baixe no Chrome.  
 2. Permita **fontes desconhecidas** se pedir.  
@@ -30,7 +30,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
 
-Página de download: https://noisy-lumen-7harg2k.shipstatic.com/baixar.html
+Página de download: https://edgy-logic-austz44.shipstatic.combaixar.html
 
 ## Novidades 1.5.8
 
