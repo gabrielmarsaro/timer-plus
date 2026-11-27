@@ -140,8 +140,8 @@ export function GeneralSettingsModal({
           <div>
             <span>RESPEITAR MÚSICA</span>
             <small>
-              MANTÉM O SPOTIFY. TIRA O TIC-TAC; MANTÉM 3-2-1 E AVISOS DE FASE (ABAIXA A MÚSICA E
-              VOLTA). NO IPHONE A “VOZ” VIRA BIP
+              MANTÉM O SPOTIFY NO DIA A DIA. NOS AVISOS 3-2-1 O IPHONE PAUSA A MÚSICA SÓ UM
+              INSTANTE (SENÃO O MUTE DEIXA O BIP MUDO) E DEVOLVE EM SEGUIDA
             </small>
           </div>
           <button

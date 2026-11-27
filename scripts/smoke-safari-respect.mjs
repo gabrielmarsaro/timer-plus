@@ -126,9 +126,8 @@ const errors = []
 if (probe.speechSpeak > 0) errors.push(`speechSynthesis.speak called ${probe.speechSpeak}×`)
 if (probe.htmlPlay > 0) errors.push(`HTMLAudio.play called ${probe.htmlPlay}×`)
 if (probe.mediaPlaying > 0) errors.push(`mediaSession playing set ${probe.mediaPlaying}×`)
-if (probe.sessionTypes.includes('playback')) errors.push('audioSession playback')
-if (probe.sessionTypes.includes('transient-solo')) errors.push('audioSession transient-solo')
-if (!probe.sessionTypes.includes('transient')) errors.push('expected transient duck')
+// Brief playback is required so mute-switch users hear cues; then ambient restore.
+if (!probe.sessionTypes.includes('playback')) errors.push('expected brief playback for cues')
 if (!probe.sessionTypes.includes('ambient')) errors.push('expected ambient restore')
 
 if (errors.length) {

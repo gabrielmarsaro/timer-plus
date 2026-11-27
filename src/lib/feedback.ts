@@ -16,8 +16,7 @@ import {
 } from './workoutMusic'
 
 type SoundKind = 'tick' | 'phase' | 'done' | 'warning' | 'preview'
-/** Never use transient-solo — on Safari it pauses Spotify (voice-prompt style). */
-type SessionType = 'auto' | 'ambient' | 'transient' | 'playback'
+type SessionType = 'auto' | 'ambient' | 'transient' | 'transient-solo' | 'playback'
 
 let audioCtx: AudioContext | null = null
 let settings: GeneralSettings | null = null
@@ -302,44 +301,74 @@ export function ensureAudioReady(): void {
   refreshExternalMusicState()
 }
 
-/** Resume Web Audio right before we emit an alert (transient). */
-function resumeForAlert(): void {
+/** Resume Web Audio; returns a promise so tones start after unlock. */
+function resumeForAlert(): Promise<AudioContext | null> {
   const ctx = getCtx()
-  if (ctx?.state === 'suspended') void ctx.resume().catch(() => undefined)
+  if (!ctx) return Promise.resolve(null)
+  if (ctx.state !== 'suspended') return Promise.resolve(ctx)
+  return ctx
+    .resume()
+    .then(() => ctx)
+    .catch(() => ctx)
 }
 
 /**
- * Safari: duck other apps briefly (`transient`), play Web Audio, restore `ambient`.
- * Do not use speechSynthesis or HTMLAudio here — both pause Spotify on iPhone.
+ * Safari + Respeitar música: cues must use `playback` briefly.
+ * `ambient`/`transient` follow the mute switch — Spotify still plays (media) while
+ * our Web Audio is silent. `playback` is audible, pauses Spotify for the cue,
+ * then we release to `ambient` + suspend so music can continue.
  */
-function runSafariDuckedCue(durationMs: number, play: () => void): void {
-  setAudioSession('transient')
-  resumeForAlert()
-  try {
-    play()
-  } catch {
-    // ignore
-  }
-  window.setTimeout(() => setAudioSession('ambient'), Math.max(200, durationMs) + 80)
+function runSafariAudibleCue(durationMs: number, play: () => void): void {
+  setAudioSession('playback')
+  void resumeForAlert().then(() => {
+    try {
+      play()
+    } catch {
+      // ignore
+    }
+    window.setTimeout(() => {
+      setAudioSession('ambient')
+      try {
+        void audioCtx?.suspend?.()
+      } catch {
+        // ignore
+      }
+    }, Math.max(280, durationMs) + 140)
+  })
 }
 
-/** Web Audio stand-in for spoken cues when Safari would pause Spotify via TTS. */
+/** Web Audio stand-in for spoken cues (Safari cannot TTS without killing Spotify forever). */
 function playSafariVoiceCue(text: string): void {
   const lower = text.toLowerCase()
-  let freqs = [660, 880]
-  if (/exerc|esfor|work|ronda/.test(lower)) freqs = [523, 784, 1046]
-  else if (/descanso|rest|pausa/.test(lower)) freqs = [784, 523]
-  else if (/prepar/.test(lower)) freqs = [440, 554, 659]
-  else if (/conclu|done|fim/.test(lower)) freqs = [523, 659, 784, 1046]
-  else if (/^\d+$/.test(lower.trim())) freqs = [990]
+  let freqs = [880, 1175]
+  let osc: OscillatorType = 'square'
+  if (/exerc|esfor|work|ronda/.test(lower)) {
+    freqs = [659, 880, 1175]
+    osc = 'square'
+  } else if (/descanso|rest|pausa/.test(lower)) {
+    freqs = [784, 523]
+    osc = 'triangle'
+  } else if (/prepar/.test(lower)) {
+    freqs = [523, 659, 784]
+    osc = 'square'
+  } else if (/conclu|done|fim/.test(lower)) {
+    freqs = [523, 659, 784, 1046]
+    osc = 'square'
+  } else if (/^\d+$/.test(lower.trim())) {
+    const n = Number(lower.trim())
+    freqs = n === 1 ? [1320] : n === 2 ? [1100] : [990]
+    osc = 'square'
+  }
 
-  const vol = volume()
-  const totalMs = freqs.length * 160 + 80
-  runSafariDuckedCue(totalMs, () => {
+  const vol = Math.min(1, volume() * 1.15)
+  const totalMs = freqs.length * 180 + 100
+  runSafariAudibleCue(totalMs, () => {
     freqs.forEach((freq, index) => {
       window.setTimeout(() => {
-        tone([freq], 0.14, 'sine', vol * 0.32)
-      }, index * 150)
+        void resumeForAlert().then(() => {
+          tone([freq], 0.16, osc, vol * 0.42)
+        })
+      }, index * 170)
     })
   })
 }
@@ -486,10 +515,11 @@ function playSound(kind: SoundKind): void {
     return
   }
 
-  // Respect music on Safari/web: duck with `transient` + Web Audio only, then ambient.
+  // Respect music on Safari/web: brief `playback` so mute-switch users hear cues.
   const plan = alertTonePlan(kind, soundType)
-  runSafariDuckedCue(Math.round(plan.duration * 1000) + 200, () => {
-    tone(plan.freqs, plan.duration, plan.osc, plan.gain)
+  const boost = Math.min(1, plan.gain * 1.35)
+  runSafariAudibleCue(Math.round(plan.duration * 1000) + 220, () => {
+    tone(plan.freqs, plan.duration, plan.osc, boost)
   })
 }
 
@@ -695,7 +725,7 @@ export function onCountdownSecond(remaining: number, phase: Phase | null, warnin
   ensureAudioReady()
 
   // Respeitar música / trilha Tabata: só corta o tic-tac contínuo.
-  // Avisos de tempo (warning + 3-2-1) continuam — com duck no Safari/Android.
+  // Avisos de tempo (warning + 3-2-1) continuam.
   const hushTicks = shouldSilenceAmbient() || isWorkoutMusicSessionActive()
   const tabataTrackOwnsCountdown = isWorkoutMusicSessionActive() || isWorkoutMusicAudible()
 
@@ -711,6 +741,7 @@ export function onCountdownSecond(remaining: number, phase: Phase | null, warnin
   }
 
   if (whole <= 3 && whole >= 1 && !tabataTrackOwnsCountdown) {
+    void vibrate('warning')
     speak(String(whole))
   }
 }

@@ -139,8 +139,8 @@ if (probe.htmlPlay > 0) errors.push(`HTMLAudio.play used ${probe.htmlPlay}`)
 if (probe.oscillatorStarts < 3) {
   errors.push(`expected Web Audio time cues, got oscillatorStarts=${probe.oscillatorStarts}`)
 }
-if (!probe.sessionTypes.includes('transient')) {
-  errors.push('expected transient duck for cues')
+if (!probe.sessionTypes.includes('playback')) {
+  errors.push(`expected brief playback for audible Safari cues, got ${probe.sessionTypes}`)
 }
 
 if (errors.length) {

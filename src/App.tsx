@@ -154,6 +154,8 @@ export default function App() {
       feedbackPhaseStart(phase, next)
     },
     onSecond: (remaining, phase) => {
+      const whole = Math.ceil(remaining)
+      if (whole <= 3 && whole >= 1) flashScreen()
       const warning =
         phase.kind === 'work' ? Math.max(3, Math.floor(phase.duration / 2)) : 0
       onCountdownSecond(remaining, phase, warning)
@@ -177,6 +179,8 @@ export default function App() {
       feedbackPhaseStart(phase, next)
     },
     onSecond: (remaining, phase) => {
+      const whole = Math.ceil(remaining)
+      if (whole <= 3 && whole >= 1) flashScreen()
       onCountdownSecond(remaining, phase, roundsSettings.warning)
     },
     onComplete: () => {
