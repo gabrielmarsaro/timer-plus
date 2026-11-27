@@ -13,7 +13,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## iPhone (Safari)
 
-**https://chaotic-ghost-ud8799h.shipstatic.com**
+**https://glossy-cyborg-4fdbwa4.shipstatic.com**
 
 1. Abra no **Safari**.  
 2. Desative o **mute lateral** se quiser alertas sonoros.  
@@ -22,7 +22,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## Android (APK) — versão **1.5.10**
 
-**https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/7c8a7e3bd3548c9c3a1f82283852df726d629c3f/releases/timer-plus-debug.apk**
+**https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/92ae0c3a7b981848d5084b0529b69d41ffc0fff4/releases/timer-plus-debug.apk**
 
 1. Baixe no Chrome.  
 2. Permita **fontes desconhecidas** se pedir.  
@@ -30,7 +30,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
 
-Página de download: https://chaotic-ghost-ud8799h.shipstatic.combaixar.html
+Página de download: https://glossy-cyborg-4fdbwa4.shipstatic.combaixar.html
 
 ## Novidades 1.5.10
 
