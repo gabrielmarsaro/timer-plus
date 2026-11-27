@@ -140,8 +140,8 @@ export function GeneralSettingsModal({
           <div>
             <span>RESPEITAR MÚSICA</span>
             <small>
-              MANTÉM O SPOTIFY NO DIA A DIA. NOS AVISOS 3-2-1 O IPHONE PAUSA A MÚSICA SÓ UM
-              INSTANTE (SENÃO O MUTE DEIXA O BIP MUDO) E DEVOLVE EM SEGUIDA
+              MANTÉM O SPOTIFY. AVISOS EM BIP (SEM ROUBAR A MÚSICA). SE O MUTE DO IPHONE ESTIVER
+              LIGADO, OLHE O FLASH DA TELA / VIBRAÇÃO NOS ÚLTIMOS 3s
             </small>
           </div>
           <button

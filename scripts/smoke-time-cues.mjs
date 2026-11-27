@@ -139,8 +139,14 @@ if (probe.htmlPlay > 0) errors.push(`HTMLAudio.play used ${probe.htmlPlay}`)
 if (probe.oscillatorStarts < 3) {
   errors.push(`expected Web Audio time cues, got oscillatorStarts=${probe.oscillatorStarts}`)
 }
-if (!probe.sessionTypes.includes('playback')) {
-  errors.push(`expected brief playback for audible Safari cues, got ${probe.sessionTypes}`)
+if (!probe.sessionTypes.includes('transient')) {
+  errors.push(`expected transient cues (not playback), got ${probe.sessionTypes}`)
+}
+if (probe.sessionTypes.includes('playback')) {
+  errors.push('playback steals Spotify permanently on Safari — must not use for cues')
+}
+if (!probe.sessionTypes.includes('auto')) {
+  errors.push('expected release to auto after cues')
 }
 
 if (errors.length) {

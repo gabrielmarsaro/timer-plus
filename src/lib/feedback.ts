@@ -313,27 +313,40 @@ function resumeForAlert(): Promise<AudioContext | null> {
 }
 
 /**
- * Safari + Respeitar música: cues must use `playback` briefly.
- * `ambient`/`transient` follow the mute switch — Spotify still plays (media) while
- * our Web Audio is silent. `playback` is audible, pauses Spotify for the cue,
- * then we release to `ambient` + suspend so music can continue.
+ * Safari + Respeitar música.
+ * Never use `playback` here — it pauses Spotify and often never gives it back.
+ * Use `transient` (notification): plays over / ducks other audio; then release to
+ * `auto` so Now Playing / Spotify can continue (playback permanently steals focus).
+ * Note: with the hardware mute switch ON, iOS may silence transient Web Audio —
+ * screen flash + vibration still signal the countdown.
  */
+let safariCueReleaseTimer = 0
+
+function releaseSafariCueSession(): void {
+  setAudioSession('auto')
+  try {
+    void audioCtx?.suspend?.()
+  } catch {
+    // ignore
+  }
+}
+
 function runSafariAudibleCue(durationMs: number, play: () => void): void {
-  setAudioSession('playback')
-  void resumeForAlert().then(() => {
+  setAudioSession('transient')
+  void resumeForAlert().then((ctx) => {
+    if (ctx?.state === 'suspended') {
+      void ctx.resume().catch(() => undefined)
+    }
     try {
       play()
     } catch {
       // ignore
     }
-    window.setTimeout(() => {
-      setAudioSession('ambient')
-      try {
-        void audioCtx?.suspend?.()
-      } catch {
-        // ignore
-      }
-    }, Math.max(280, durationMs) + 140)
+    // Debounce across 3-2-1 so we only release once after the last cue.
+    window.clearTimeout(safariCueReleaseTimer)
+    safariCueReleaseTimer = window.setTimeout(() => {
+      releaseSafariCueSession()
+    }, Math.max(400, durationMs) + 280)
   })
 }
 
