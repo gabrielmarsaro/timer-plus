@@ -346,7 +346,9 @@ export default function App() {
 
   useEffect(() => {
     const onVisible = () => {
-      if (document.visibilityState === 'visible') void ensureAudioReady()
+      // ensureAudioReady no-ops AudioContext resume when “Respeitar música” is on,
+      // so opening/focusing the app does not pause Spotify.
+      if (document.visibilityState === 'visible') ensureAudioReady()
     }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)

@@ -149,21 +149,40 @@ function setAudioSession(type: SessionType): void {
   }
 }
 
+/** Config “Respeitar música” — não roubar o foco do Spotify/etc. */
+export function respectsExternalMusic(): boolean {
+  return Boolean(settings?.ducking)
+}
+
 /**
- * Best-effort: other music apps (Spotify/Deezer/YouTube) holding audio focus.
- * Web cannot read other apps directly; we use AudioContext interruption +
- * suspended-while-visible after a resume attempt.
+ * Best-effort: other music apps holding audio focus.
+ * Never create/resume AudioContext just to probe — that pauses Spotify.
  */
 export function refreshExternalMusicState(): boolean {
   if (!unlocked) return externalMusic
-  const ctx = getCtx()
-  if (!ctx) return externalMusic
+  // Use existing ctx only — constructing AudioContext can steal focus on Android.
+  const ctx = audioCtx
+  if (!ctx) {
+    setExternalMusicBlocked(false)
+    return externalMusic
+  }
 
   const state = ctx.state as string
   if (state === 'interrupted') {
     externalMusic = true
-    setExternalMusicBlocked(Boolean(settings?.ducking))
+    setExternalMusicBlocked(respectsExternalMusic())
     return true
+  }
+
+  if (respectsExternalMusic()) {
+    // Suspended while visible usually means another app owns audio. Do not resume.
+    if (state === 'suspended' && document.visibilityState === 'visible') {
+      externalMusic = true
+      setExternalMusicBlocked(true)
+      return true
+    }
+    setExternalMusicBlocked(externalMusic)
+    return externalMusic
   }
 
   if (state === 'suspended' && document.visibilityState === 'visible') {
@@ -171,32 +190,47 @@ export function refreshExternalMusicState(): boolean {
       const next = ctx.state as string
       if (next === 'suspended' || next === 'interrupted') {
         externalMusic = true
-        setExternalMusicBlocked(Boolean(settings?.ducking))
+        setExternalMusicBlocked(false)
       } else if (next === 'running') {
         externalMusic = false
         setExternalMusicBlocked(false)
       }
     }).catch(() => {
       externalMusic = true
-      setExternalMusicBlocked(Boolean(settings?.ducking))
     })
   }
 
-  setExternalMusicBlocked(externalMusic && Boolean(settings?.ducking))
+  setExternalMusicBlocked(false)
   return externalMusic
 }
 
 function shouldSilenceAmbient(): boolean {
   // "Ducking" setting = respect background music (mute ticks / chatter).
-  if (!settings?.ducking) return false
+  if (!respectsExternalMusic()) return false
   return refreshExternalMusicState()
 }
 
 /**
  * Unlock audio inside a user gesture. Must NOT await from the UI.
+ * With “Respeitar música”, stay ambient and skip silent HTML plays so we
+ * do not pause Spotify/Deezer on INICIAR / app open.
  */
 export function unlockFeedback(): void {
   setAudioSession('ambient')
+
+  if (respectsExternalMusic()) {
+    unlocked = true
+    // Assume external music may be playing — hush ticks until we know otherwise.
+    externalMusic = true
+    setExternalMusicBlocked(true)
+    try {
+      window.speechSynthesis?.getVoices?.()
+    } catch {
+      // ignore
+    }
+    return
+  }
+
   const ctx = getCtx()
   if (ctx) {
     try {
@@ -249,11 +283,25 @@ export function unlockFeedback(): void {
   refreshExternalMusicState()
 }
 
+/**
+ * Keep Web Audio awake only when we own audio. Never steal focus on tab focus
+ * / app open while “Respeitar música” is on.
+ */
 export function ensureAudioReady(): void {
   if (!unlocked) return
+  if (respectsExternalMusic()) {
+    refreshExternalMusicState()
+    return
+  }
   const ctx = getCtx()
   if (ctx?.state === 'suspended') void ctx.resume().catch(() => undefined)
   refreshExternalMusicState()
+}
+
+/** Resume Web Audio right before we emit an alert (transient). */
+function resumeForAlert(): void {
+  const ctx = getCtx()
+  if (ctx?.state === 'suspended') void ctx.resume().catch(() => undefined)
 }
 
 function volume(): number {
@@ -337,6 +385,7 @@ function playSound(kind: SoundKind): void {
 
   if (kind === 'tick') {
     setAudioSession('ambient')
+    resumeForAlert()
     playHtml(getHtmlTick(), vol * 0.55)
     tone([1200], 0.035, 'square', vol * 0.1)
     return
@@ -344,6 +393,7 @@ function playSound(kind: SoundKind): void {
 
   // Alerts (start/end/warning) use transient session so they still cut through music.
   setAudioSession('transient')
+  resumeForAlert()
   playHtml(getHtmlAlert(), vol * (kind === 'done' ? 1 : 0.85))
 
   try {

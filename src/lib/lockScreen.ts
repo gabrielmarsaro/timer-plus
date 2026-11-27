@@ -1,4 +1,5 @@
 import { MediaSession } from '@capgo/capacitor-media-session'
+import { respectsExternalMusic } from './feedback'
 import { formatTime } from './format'
 
 /**
@@ -7,6 +8,9 @@ import { formatTime } from './format'
  * Keep-alive: silent WAV at volume 0 (never muted — drops Now Playing on iOS).
  * Metadata updates are throttled to whole seconds — regenerating artwork or
  * poking Media Session every rAF frame freezes Safari on iPhone.
+ *
+ * With “Respeitar música”: never claim exclusive playback / Capgo foreground
+ * session / keepalive — those pause Spotify when the app opens or starts.
  */
 
 /** v2 = true silence (all-zero samples). Bump when replacing the asset. */
@@ -38,15 +42,24 @@ export type LockScreenAction = 'pause' | 'resume' | 'stop'
 
 type AudioSessionLike = { type: string }
 
-function setPlaybackAudioSession(): void {
+function setAudioSessionType(type: 'playback' | 'ambient'): void {
   try {
     const nav = navigator as Navigator & { audioSession?: AudioSessionLike }
     if (nav.audioSession) {
-      nav.audioSession.type = 'playback'
+      nav.audioSession.type = type
     }
   } catch {
     // ignore
   }
+}
+
+function setPlaybackAudioSession(): void {
+  // Exclusive playback stops other apps — only when user turned off “Respeitar música”.
+  setAudioSessionType(respectsExternalMusic() ? 'ambient' : 'playback')
+}
+
+function mixWithOthers(): boolean {
+  return respectsExternalMusic()
 }
 
 function ensureAudio(): HTMLAudioElement | null {
@@ -219,6 +232,9 @@ function pushWebSession(payload: LockScreenPayload, forceArtwork: boolean): void
 }
 
 async function pushNativeSession(payload: LockScreenPayload, forceArtwork: boolean): Promise<void> {
+  // Capgo starts a MEDIA_PLAYBACK foreground service + setActive(true), which
+  // requests Android audio focus and pauses Spotify. Skip while mixing.
+  if (mixWithOthers()) return
   const { title, artist, album } = buildLabels(payload)
   const art = forceArtwork || !artworkUrl ? artworkFor(payload) : artworkUrl
   await wireHandlers()
@@ -231,6 +247,7 @@ async function pushNativeSession(payload: LockScreenPayload, forceArtwork: boole
   const nextState = payload.paused ? 'paused' : 'playing'
   if (lastPlaybackState !== nextState) {
     lastPlaybackState = nextState
+    nativeSessionEverStarted = true
     await MediaSession.setPlaybackState({ playbackState: nextState })
   }
 }
@@ -240,6 +257,12 @@ function wireVisibilityResume(): void {
   visibilityWired = true
   const resume = () => {
     if (!latestPayload?.running) return
+    if (mixWithOthers()) {
+      // Stay ambient — do not restart keepalive (that pauses Spotify).
+      setAudioSessionType('ambient')
+      if (latestPayload) publishMetadata(latestPayload, true)
+      return
+    }
     setPlaybackAudioSession()
     const el = ensureAudio()
     if (el && el.paused) void el.play().catch(() => undefined)
@@ -266,6 +289,7 @@ function startMetaLoop(): void {
     if (!latestPayload) return
     if (!(latestPayload.running || latestPayload.paused)) return
     publishMetadata(latestPayload)
+    if (mixWithOthers()) return
     const el = ensureAudio()
     if (el && latestPayload.running && el.paused) {
       void el.play().catch(() => undefined)
@@ -292,15 +316,25 @@ export function syncLockScreen(
   wireVisibilityResume()
   startMetaLoop()
 
-  const el = ensureAudio()
-  if (el) {
-    el.volume = 0
-    el.muted = false
-    if (payload.running && el.paused) {
-      void el.play().catch(() => undefined)
+  if (!mixWithOthers()) {
+    const el = ensureAudio()
+    if (el) {
+      el.volume = 0
+      el.muted = false
+      if (payload.running && el.paused) {
+        void el.play().catch(() => undefined)
+      }
+      if (payload.paused && !el.paused) {
+        el.pause()
+      }
     }
-    if (payload.paused && !el.paused) {
-      el.pause()
+  } else if (audio && !audio.paused) {
+    // Preference flipped on mid-run — release exclusive keepalive.
+    try {
+      audio.pause()
+      audio.currentTime = 0
+    } catch {
+      // ignore
     }
   }
 
@@ -310,6 +344,10 @@ export function syncLockScreen(
 /** Must run inside a user gesture (INICIAR) so Safari unlocks audio + Now Playing. */
 export function primeLockScreenAudio(): void {
   setPlaybackAudioSession()
+  if (mixWithOthers()) {
+    // Do not play keepalive — HTMLAudio.play pauses other apps on Android/iOS.
+    return
+  }
   const el = ensureAudio()
   if (!el) return
   void el.play().catch(() => undefined)
@@ -317,6 +355,8 @@ export function primeLockScreenAudio(): void {
     void Notification.requestPermission().catch(() => undefined)
   }
 }
+
+let nativeSessionEverStarted = false
 
 export async function stopLockScreen(): Promise<void> {
   latestPayload = null
@@ -338,11 +378,16 @@ export async function stopLockScreen(): Promise<void> {
       // ignore
     }
   }
-  try {
-    await MediaSession.setPlaybackState({ playbackState: 'none' })
-  } catch {
-    // ignore
+  // Avoid poking Capgo on idle mount — setPlaybackState can bind the media service.
+  if (nativeSessionEverStarted || handlersWired) {
+    try {
+      await MediaSession.setPlaybackState({ playbackState: 'none' })
+    } catch {
+      // ignore
+    }
+    nativeSessionEverStarted = false
   }
+  setAudioSessionType('ambient')
   if ('mediaSession' in navigator) {
     try {
       navigator.mediaSession.playbackState = 'none'

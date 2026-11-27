@@ -20,7 +20,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 3. Toque **INICIAR** — o tempo aparece em **A reproduzir** na tela bloqueada.  
 4. **Compartilhar** → **Adicionar à Tela de Início**.
 
-## Android (APK) — versão **1.5.8**
+## Android (APK) — versão **1.5.9**
 
 **https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/48e4286f8ec35f75b66c1e822696caa6ae0dc6c4/releases/timer-plus-debug.apk**
 
@@ -32,8 +32,9 @@ Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
 
 Página de download: https://edgy-logic-austz44.shipstatic.combaixar.html
 
-## Novidades 1.5.8
+## Novidades 1.5.9
 
+- Abrir o app **não para** a música do Spotify/Deezer/YouTube (Respeitar música)
 - Sem aviso de instruções do iPhone ao iniciar
 - **Pular** fase e **+15s** no meio do treino
 - Mudar de aba / editar **não mata** a sessão ativa
