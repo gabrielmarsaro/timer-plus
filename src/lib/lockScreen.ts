@@ -260,9 +260,7 @@ function wireVisibilityResume(): void {
   const resume = () => {
     if (!latestPayload?.running) return
     if (mixWithOthers()) {
-      // Stay ambient — do not restart keepalive (that pauses Spotify).
-      setAudioSessionType('ambient')
-      if (latestPayload) publishMetadata(latestPayload, true)
+      // Do not touch audioSession / keepalive on focus (Safari pauses Spotify).
       return
     }
     setPlaybackAudioSession()
@@ -314,7 +312,11 @@ export function syncLockScreen(
 
   latestPayload = payload
   actionCallback = onAction ?? null
-  setPlaybackAudioSession()
+  if (!mixWithOthers()) {
+    lockAudioClaimed = true
+    setPlaybackAudioSession()
+  }
+  // Mixing: do not touch audioSession at all (Safari pauses Spotify on any claim).
   wireVisibilityResume()
   startMetaLoop()
 
@@ -345,11 +347,12 @@ export function syncLockScreen(
 
 /** Must run inside a user gesture (INICIAR) so Safari unlocks audio + Now Playing. */
 export function primeLockScreenAudio(): void {
-  setPlaybackAudioSession()
   if (mixWithOthers()) {
-    // Do not play keepalive — HTMLAudio.play pauses other apps on Android/iOS.
+    // Do not touch audioSession / keepalive — opening or starting must not pause Spotify.
     return
   }
+  lockAudioClaimed = true
+  setPlaybackAudioSession()
   const el = ensureAudio()
   if (!el) return
   void el.play().catch(() => undefined)
@@ -359,8 +362,11 @@ export function primeLockScreenAudio(): void {
 }
 
 let nativeSessionEverStarted = false
+/** True only after we intentionally claimed an audio session / media session. */
+let lockAudioClaimed = false
 
 export async function stopLockScreen(): Promise<void> {
+  const hadClaim = lockAudioClaimed || nativeSessionEverStarted || handlersWired || Boolean(audio)
   latestPayload = null
   lastPublishKey = ''
   lastPlaybackState = 'none'
@@ -380,7 +386,12 @@ export async function stopLockScreen(): Promise<void> {
       // ignore
     }
   }
-  // Avoid poking Capgo on idle mount — setPlaybackState can bind the media service.
+  // Idle mount / first open: do nothing. Touching audioSession or Media Session
+  // on Safari activates AVAudioSession and pauses Spotify immediately.
+  if (!hadClaim) {
+    lockAudioClaimed = false
+    return
+  }
   if (nativeSessionEverStarted || handlersWired) {
     try {
       await MediaSession.setPlaybackState({ playbackState: 'none' })
@@ -390,6 +401,7 @@ export async function stopLockScreen(): Promise<void> {
     nativeSessionEverStarted = false
   }
   setAudioSessionType('ambient')
+  lockAudioClaimed = false
   if ('mediaSession' in navigator) {
     try {
       navigator.mediaSession.playbackState = 'none'

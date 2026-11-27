@@ -222,20 +222,17 @@ function shouldSilenceAmbient(): boolean {
  * do not pause Spotify/Deezer on INICIAR / app open.
  */
 export function unlockFeedback(): void {
-  setAudioSession('ambient')
-
   if (respectsExternalMusic()) {
     unlocked = true
     // Assume external music may be playing — hush ticks until we know otherwise.
     externalMusic = true
     setExternalMusicBlocked(true)
-    try {
-      window.speechSynthesis?.getVoices?.()
-    } catch {
-      // ignore
-    }
+    // Do not set audioSession / speechSynthesis / AudioContext here — on Safari
+    // that activates AVAudioSession and pauses Spotify as soon as you tap INICIAR.
     return
   }
+
+  setAudioSession('ambient')
 
   const ctx = getCtx()
   if (ctx) {

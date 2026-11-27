@@ -331,23 +331,12 @@ export default function App() {
     if (tabata.status === 'idle') stopWorkoutMusic()
   }, [tab, tabata.status, tabata.currentPhase, tabata.phaseRemaining])
 
-  useEffect(() => {
-    const warmVoices = () => {
-      try {
-        window.speechSynthesis?.getVoices()
-      } catch {
-        // ignore
-      }
-    }
-    warmVoices()
-    window.speechSynthesis?.addEventListener?.('voiceschanged', warmVoices)
-    return () => window.speechSynthesis?.removeEventListener?.('voiceschanged', warmVoices)
-  }, [])
+  // Do not call speechSynthesis.getVoices() on mount — on Safari that can
+  // activate the audio session and pause Spotify as soon as the app opens.
 
   useEffect(() => {
     const onVisible = () => {
-      // ensureAudioReady no-ops AudioContext resume when “Respeitar música” is on,
-      // so opening/focusing the app does not pause Spotify.
+      // ensureAudioReady no-ops AudioContext resume when “Respeitar música” is on.
       if (document.visibilityState === 'visible') ensureAudioReady()
     }
     document.addEventListener('visibilitychange', onVisible)
