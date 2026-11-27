@@ -20,7 +20,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 3. Toque **INICIAR** — o tempo aparece em **A reproduzir** na tela bloqueada.  
 4. **Compartilhar** → **Adicionar à Tela de Início**.
 
-## Android (APK) — versão **1.5.10**
+## Android (APK) — versão **1.5.11**
 
 **https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/92ae0c3a7b981848d5084b0529b69d41ffc0fff4/releases/timer-plus-debug.apk**
 
@@ -32,8 +32,9 @@ Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
 
 Página de download: https://glossy-cyborg-4fdbwa4.shipstatic.combaixar.html
 
-## Novidades 1.5.10
+## Novidades 1.5.11
 
+- **Safari/iPhone:** avisos abaixam a música e voltam (sem `speechSynthesis`, que pausava o Spotify)
 - Avisos/voz **abaixam** a música de fundo e **devolvem** o volume (sem pausar o Spotify)
 - Abrir o app **não para** a música do Spotify/Deezer/YouTube (Respeitar música)
 - Sem aviso de instruções do iPhone ao iniciar

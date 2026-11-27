@@ -213,6 +213,8 @@ async function wireHandlers(): Promise<void> {
 
 function pushWebSession(payload: LockScreenPayload, forceArtwork: boolean): void {
   if (!('mediaSession' in navigator)) return
+  // Claiming Now Playing / playbackState "playing" on Safari steals Spotify.
+  if (mixWithOthers()) return
   const { title, artist, album } = buildLabels(payload)
   try {
     const art = forceArtwork || !artworkUrl ? artworkFor(payload) : artworkUrl

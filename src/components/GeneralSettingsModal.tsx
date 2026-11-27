@@ -140,8 +140,8 @@ export function GeneralSettingsModal({
           <div>
             <span>RESPEITAR MÚSICA</span>
             <small>
-              MANTÉM A MÚSICA DE FUNDO. NOS AVISOS/VOZ O APP ABAIXA A MÚSICA E DEPOIS DEVOLVE O
-              VOLUME — SEM PAUSAR O SPOTIFY
+              MANTÉM A MÚSICA DE FUNDO. NOS AVISOS O APP ABAIXA E DEVOLVE O VOLUME. NO IPHONE
+              (SAFARI) A VOZ VIRA BIP — O SPEECH DO SAFARI PAUSA O SPOTIFY
             </small>
           </div>
           <button

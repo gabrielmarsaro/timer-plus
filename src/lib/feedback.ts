@@ -16,6 +16,7 @@ import {
 } from './workoutMusic'
 
 type SoundKind = 'tick' | 'phase' | 'done' | 'warning' | 'preview'
+/** Never use transient-solo — on Safari it pauses Spotify (voice-prompt style). */
 type SessionType = 'auto' | 'ambient' | 'transient' | 'playback'
 
 let audioCtx: AudioContext | null = null
@@ -309,6 +310,42 @@ function resumeForAlert(): void {
   if (ctx?.state === 'suspended') void ctx.resume().catch(() => undefined)
 }
 
+/**
+ * Safari: duck other apps briefly (`transient`), play Web Audio, restore `ambient`.
+ * Do not use speechSynthesis or HTMLAudio here — both pause Spotify on iPhone.
+ */
+function runSafariDuckedCue(durationMs: number, play: () => void): void {
+  setAudioSession('transient')
+  resumeForAlert()
+  try {
+    play()
+  } catch {
+    // ignore
+  }
+  window.setTimeout(() => setAudioSession('ambient'), Math.max(200, durationMs) + 80)
+}
+
+/** Web Audio stand-in for spoken cues when Safari would pause Spotify via TTS. */
+function playSafariVoiceCue(text: string): void {
+  const lower = text.toLowerCase()
+  let freqs = [660, 880]
+  if (/exerc|esfor|work|ronda/.test(lower)) freqs = [523, 784, 1046]
+  else if (/descanso|rest|pausa/.test(lower)) freqs = [784, 523]
+  else if (/prepar/.test(lower)) freqs = [440, 554, 659]
+  else if (/conclu|done|fim/.test(lower)) freqs = [523, 659, 784, 1046]
+  else if (/^\d+$/.test(lower.trim())) freqs = [990]
+
+  const vol = volume()
+  const totalMs = freqs.length * 160 + 80
+  runSafariDuckedCue(totalMs, () => {
+    freqs.forEach((freq, index) => {
+      window.setTimeout(() => {
+        tone([freq], 0.14, 'sine', vol * 0.32)
+      }, index * 150)
+    })
+  })
+}
+
 function volume(): number {
   const base = Math.max(0.05, settings?.volume ?? 0.75)
   return isAppleTouchWeb() ? Math.min(1, base * 1.25) : base
@@ -435,23 +472,27 @@ function playSound(kind: SoundKind): void {
     return
   }
 
-  // Alerts: transient session, then back to ambient.
-  setAudioSession('transient')
-  resumeForAlert()
-  // HTMLAudio.play() often requests exclusive focus on Android WebView / iOS.
-  // Skip it while respecting music — Web Audio tones are enough.
+  // HTMLAudio defaults to “playback” on Safari and pauses Spotify — skip when respecting.
   if (!respect) {
+    setAudioSession('transient')
+    resumeForAlert()
     playHtml(getHtmlAlert(), vol * (kind === 'done' ? 1 : 0.85))
+    try {
+      const plan = alertTonePlan(kind, soundType)
+      tone(plan.freqs, plan.duration, plan.osc, plan.gain)
+    } catch {
+      // ignore
+    } finally {
+      window.setTimeout(() => setAudioSession('ambient'), 700)
+    }
+    return
   }
 
-  try {
-    const plan = alertTonePlan(kind, soundType)
+  // Respect music on Safari/web: duck with `transient` + Web Audio only, then ambient.
+  const plan = alertTonePlan(kind, soundType)
+  runSafariDuckedCue(Math.round(plan.duration * 1000) + 200, () => {
     tone(plan.freqs, plan.duration, plan.osc, plan.gain)
-  } catch {
-    // ignore
-  } finally {
-    window.setTimeout(() => setAudioSession('ambient'), respect ? 900 : 700)
-  }
+  })
 }
 
 function pickVoice(): SpeechSynthesisVoice | null {
@@ -493,6 +534,35 @@ export function speak(text: string, force = false): void {
     return
   }
 
+  // Safari/iPhone: speechSynthesis acts like exclusive voice prompts and pauses Spotify.
+  // With “Respeitar música”, use ducked Web Audio callouts instead (transient → ambient).
+  if (respect && isAppleTouchWeb()) {
+    speakChain = speakChain
+      .catch(() => undefined)
+      .then(
+        () =>
+          new Promise<void>((resolve) => {
+            playSafariVoiceCue(normalized)
+            window.setTimeout(resolve, 700)
+          }),
+      )
+    return
+  }
+
+  // Other web + respect (desktop Chrome etc.): still avoid HTMLAudio; TTS may duck or pause.
+  if (respect) {
+    speakChain = speakChain
+      .catch(() => undefined)
+      .then(
+        () =>
+          new Promise<void>((resolve) => {
+            playSafariVoiceCue(normalized)
+            window.setTimeout(resolve, 700)
+          }),
+      )
+    return
+  }
+
   if (!('speechSynthesis' in window)) return
 
   const utter = new SpeechSynthesisUtterance(normalized)
@@ -508,14 +578,10 @@ export function speak(text: string, force = false): void {
     .then(
       () =>
         new Promise<void>((resolve) => {
-          const done = () => {
-            if (respect) setAudioSession('ambient')
-            resolve()
-          }
+          const done = () => resolve()
           utter.onend = done
           utter.onerror = done
           try {
-            if (respect) setAudioSession('transient')
             if (!isAppleTouchWeb()) {
               try {
                 window.speechSynthesis.cancel()
