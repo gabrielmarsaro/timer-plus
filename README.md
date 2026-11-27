@@ -20,7 +20,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 3. Toque **INICIAR** — o tempo aparece em **A reproduzir** na tela bloqueada.  
 4. **Compartilhar** → **Adicionar à Tela de Início**.
 
-## Android (APK) — versão **1.5.9**
+## Android (APK) — versão **1.5.10**
 
 **https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/7c8a7e3bd3548c9c3a1f82283852df726d629c3f/releases/timer-plus-debug.apk**
 
@@ -32,8 +32,9 @@ Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
 
 Página de download: https://chaotic-ghost-ud8799h.shipstatic.combaixar.html
 
-## Novidades 1.5.9
+## Novidades 1.5.10
 
+- Avisos/voz **abaixam** a música de fundo e **devolvem** o volume (sem pausar o Spotify)
 - Abrir o app **não para** a música do Spotify/Deezer/YouTube (Respeitar música)
 - Sem aviso de instruções do iPhone ao iniciar
 - **Pular** fase e **+15s** no meio do treino

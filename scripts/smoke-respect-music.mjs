@@ -117,6 +117,11 @@ if (beforeStart.ctxResumeCount > 0) {
 if (beforeStart.htmlPlayCount > 0) {
   errors.push(`HTMLAudio.play on open/visibility (${beforeStart.htmlPlayCount})`)
 }
+if (afterStart.htmlPlayCount > 0) {
+  errors.push(
+    `HTMLAudio.play during alert while respecting music (${afterStart.htmlPlayCount}) — should duck via Web Audio / native only`,
+  )
+}
 if (afterStart.sessionTypes.includes('playback')) {
   errors.push(`audioSession set to playback while respecting music: ${afterStart.sessionTypes}`)
 }

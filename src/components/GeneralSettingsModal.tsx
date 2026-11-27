@@ -140,8 +140,8 @@ export function GeneralSettingsModal({
           <div>
             <span>RESPEITAR MÚSICA</span>
             <small>
-              SE SPOTIFY/DEEZER/YOUTUBE ESTIVER TOCANDO, TIRA O TIQUE-TAQUE E A BATIDA DO APP —
-              DEIXA SÓ ALERTAS DE INÍCIO/FIM
+              MANTÉM A MÚSICA DE FUNDO. NOS AVISOS/VOZ O APP ABAIXA A MÚSICA E DEPOIS DEVOLVE O
+              VOLUME — SEM PAUSAR O SPOTIFY
             </small>
           </div>
           <button

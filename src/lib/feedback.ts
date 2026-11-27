@@ -2,6 +2,11 @@ import { Capacitor } from '@capacitor/core'
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics'
 import type { GeneralSettings, Phase } from '../types'
 import {
+  isNativeAudioDuckAvailable,
+  nativeBeep,
+  nativeSpeak,
+} from '../plugins/audioDuck'
+import {
   bindWorkoutAudioContext,
   configureWorkoutMusic,
   isWorkoutMusicAudible,
@@ -372,6 +377,30 @@ function tone(
   }
 }
 
+function alertTonePlan(
+  kind: Exclude<SoundKind, 'tick'>,
+  soundType: NonNullable<GeneralSettings>['soundType'],
+): { freqs: number[]; duration: number; osc: OscillatorType; gain: number } {
+  const vol = volume()
+  if (soundType === 'bell') {
+    if (kind === 'done') return { freqs: [523, 659, 784], duration: 0.55, osc: 'sine', gain: vol * 0.28 }
+    if (kind === 'warning') return { freqs: [880, 660], duration: 0.28, osc: 'sine', gain: vol * 0.26 }
+    return { freqs: [784, 988], duration: 0.28, osc: 'sine', gain: vol * 0.26 }
+  }
+  if (soundType === 'censor') {
+    if (kind === 'done') return { freqs: [180, 140], duration: 0.5, osc: 'sawtooth', gain: vol * 0.24 }
+    if (kind === 'warning') return { freqs: [220], duration: 0.22, osc: 'sawtooth', gain: vol * 0.22 }
+    return { freqs: [160], duration: 0.2, osc: 'sawtooth', gain: vol * 0.22 }
+  }
+  if (kind === 'done') return { freqs: [880, 1175], duration: 0.45, osc: 'square', gain: vol * 0.2 }
+  if (kind === 'warning') return { freqs: [990], duration: 0.18, osc: 'square', gain: vol * 0.2 }
+  return { freqs: [760], duration: 0.16, osc: 'square', gain: vol * 0.2 }
+}
+
+/**
+ * With “Respeitar música” on Android: native duck + beep (no WebView media focus).
+ * On web: transient session + Web Audio only (skip HTMLAudio, which pauses Spotify).
+ */
 function playSound(kind: SoundKind): void {
   if (!settings) return
   if (kind === 'tick' && !settings.ticking) return
@@ -382,8 +411,10 @@ function playSound(kind: SoundKind): void {
 
   const vol = volume()
   const soundType = settings.soundType
+  const respect = respectsExternalMusic()
 
   if (kind === 'tick') {
+    if (respect) return
     setAudioSession('ambient')
     resumeForAlert()
     playHtml(getHtmlTick(), vol * 0.55)
@@ -391,34 +422,35 @@ function playSound(kind: SoundKind): void {
     return
   }
 
-  // Alerts (start/end/warning) use transient session so they still cut through music.
+  if (respect && isNativeAudioDuckAvailable()) {
+    const plan = alertTonePlan(kind, soundType)
+    const primary = plan.freqs[0] ?? 880
+    void nativeBeep(primary, Math.round(plan.duration * 1000), Math.min(1, vol))
+    // Stack a second partial for chords without a second focus grab if first still holds.
+    if (plan.freqs[1]) {
+      window.setTimeout(() => {
+        void nativeBeep(plan.freqs[1]!, 90, Math.min(1, vol * 0.85))
+      }, 40)
+    }
+    return
+  }
+
+  // Alerts: transient session, then back to ambient.
   setAudioSession('transient')
   resumeForAlert()
-  playHtml(getHtmlAlert(), vol * (kind === 'done' ? 1 : 0.85))
+  // HTMLAudio.play() often requests exclusive focus on Android WebView / iOS.
+  // Skip it while respecting music — Web Audio tones are enough.
+  if (!respect) {
+    playHtml(getHtmlAlert(), vol * (kind === 'done' ? 1 : 0.85))
+  }
 
   try {
-    if (soundType === 'bell') {
-      if (kind === 'done') tone([523, 659, 784], 0.55, 'sine', vol * 0.28)
-      else if (kind === 'warning') tone([880, 660], 0.28, 'sine', vol * 0.26)
-      else tone([784, 988], 0.28, 'sine', vol * 0.26)
-      return
-    }
-
-    if (soundType === 'censor') {
-      if (kind === 'done') tone([180, 140], 0.5, 'sawtooth', vol * 0.24)
-      else if (kind === 'warning') tone([220], 0.22, 'sawtooth', vol * 0.22)
-      else tone([160], 0.2, 'sawtooth', vol * 0.22)
-      return
-    }
-
-    if (kind === 'done') tone([880, 1175], 0.45, 'square', vol * 0.2)
-    else if (kind === 'warning') tone([990], 0.18, 'square', vol * 0.2)
-    else tone([760], 0.16, 'square', vol * 0.2)
+    const plan = alertTonePlan(kind, soundType)
+    tone(plan.freqs, plan.duration, plan.osc, plan.gain)
   } catch {
     // ignore
   } finally {
-    // Return to ambient so ticks can be auto-silenced by the OS when music plays.
-    window.setTimeout(() => setAudioSession('ambient'), 700)
+    window.setTimeout(() => setAudioSession('ambient'), respect ? 900 : 700)
   }
 }
 
@@ -443,12 +475,25 @@ function pickVoice(): SpeechSynthesisVoice | null {
 
 export function speak(text: string, force = false): void {
   if (!settings?.voiceAssistant && !force) return
-  if (!('speechSynthesis' in window)) return
 
   const normalized = text.trim()
   if (!normalized) return
   if (!force && normalized === lastSpoken) return
   lastSpoken = normalized
+
+  const respect = respectsExternalMusic()
+
+  // Android APK: native TTS + AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK, then unduck.
+  if (respect && isNativeAudioDuckAvailable()) {
+    speakChain = speakChain
+      .catch(() => undefined)
+      .then(async () => {
+        await nativeSpeak(normalized)
+      })
+    return
+  }
+
+  if (!('speechSynthesis' in window)) return
 
   const utter = new SpeechSynthesisUtterance(normalized)
   utter.lang = 'pt-BR'
@@ -463,10 +508,14 @@ export function speak(text: string, force = false): void {
     .then(
       () =>
         new Promise<void>((resolve) => {
-          const done = () => resolve()
+          const done = () => {
+            if (respect) setAudioSession('ambient')
+            resolve()
+          }
           utter.onend = done
           utter.onerror = done
           try {
+            if (respect) setAudioSession('transient')
             if (!isAppleTouchWeb()) {
               try {
                 window.speechSynthesis.cancel()
