@@ -160,6 +160,15 @@ export function respectsExternalMusic(): boolean {
 }
 
 /**
+ * iPhone Safari cannot play a cue and reliably give Spotify back.
+ * Any audioSession / Web Audio / TTS tends to pause music for good.
+ * In that mode we signal with UI only (burst + flash).
+ */
+export function safariVisualCuesOnly(): boolean {
+  return respectsExternalMusic() && isAppleTouchWeb()
+}
+
+/**
  * Best-effort: other music apps holding audio focus.
  * Never create/resume AudioContext just to probe — that pauses Spotify.
  */
@@ -244,7 +253,8 @@ export function unlockFeedback(): void {
     unlocked = true
     externalMusic = true
     setExternalMusicBlocked(true)
-    unlockWebAudioOnly()
+    // Safari: do not touch AudioContext at all — resume/play pauses Spotify.
+    if (!isAppleTouchWeb()) unlockWebAudioOnly()
     return
   }
 
@@ -332,6 +342,9 @@ function releaseSafariCueSession(): void {
 }
 
 function runSafariAudibleCue(durationMs: number, play: () => void): void {
+  // With Respeitar música on iPhone we never take the audio session.
+  if (safariVisualCuesOnly()) return
+
   setAudioSession('transient')
   void resumeForAlert().then((ctx) => {
     if (ctx?.state === 'suspended') {
@@ -528,7 +541,9 @@ function playSound(kind: SoundKind): void {
     return
   }
 
-  // Respect music on Safari/web: brief `playback` so mute-switch users hear cues.
+  if (safariVisualCuesOnly()) return
+
+  // Respect music on other web: transient tones, then release.
   const plan = alertTonePlan(kind, soundType)
   const boost = Math.min(1, plan.gain * 1.35)
   runSafariAudibleCue(Math.round(plan.duration * 1000) + 220, () => {
@@ -575,8 +590,12 @@ export function speak(text: string, force = false): void {
     return
   }
 
-  // Safari/iPhone: speechSynthesis acts like exclusive voice prompts and pauses Spotify.
-  // With “Respeitar música”, use ducked Web Audio callouts instead (transient → ambient).
+  // Safari/iPhone + Respeitar música: no audio APIs (Spotify would stop). UI handles cues.
+  if (safariVisualCuesOnly()) {
+    return
+  }
+
+  // Other Apple path without ducking already handled; remaining respect+web uses tones.
   if (respect && isAppleTouchWeb()) {
     speakChain = speakChain
       .catch(() => undefined)

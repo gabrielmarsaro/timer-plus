@@ -140,8 +140,8 @@ export function GeneralSettingsModal({
           <div>
             <span>RESPEITAR MÚSICA</span>
             <small>
-              MANTÉM O SPOTIFY. AVISOS EM BIP (SEM ROUBAR A MÚSICA). SE O MUTE DO IPHONE ESTIVER
-              LIGADO, OLHE O FLASH DA TELA / VIBRAÇÃO NOS ÚLTIMOS 3s
+              NO IPHONE (SAFARI) OS AVISOS SÃO VISUAIS (NÚMERO GRANDE + FLASH) — QUALQUER BIP
+              PARA O SPOTIFY. NO ANDROID O APP ABAIXA A MÚSICA E DEVOLVE
             </small>
           </div>
           <button

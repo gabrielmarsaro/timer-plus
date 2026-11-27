@@ -119,6 +119,8 @@ export default function App() {
   const [generalOpen, setGeneralOpen] = useState(false)
   const [workoutEditOpen, setWorkoutEditOpen] = useState(false)
   const [screenFlash, setScreenFlash] = useState(false)
+  /** Big on-screen 3-2-1 when Safari can't beep without killing Spotify. */
+  const [cueDigit, setCueDigit] = useState<number | null>(null)
   const [coachOpen, setCoachOpen] = useState(() => {
     try {
       return localStorage.getItem('timer-viking:onboarding-v1') !== '1'
@@ -133,6 +135,16 @@ export default function App() {
     window.setTimeout(() => setScreenFlash(false), 160)
   }, [generalSettings.screenFlash])
 
+  const pulseCountdownCue = useCallback(
+    (digit: number) => {
+      setCueDigit(digit)
+      // Always flash for 3-2-1 — this is the Safari-safe signal when audio would steal Spotify.
+      setScreenFlash(true)
+      window.setTimeout(() => setScreenFlash(false), 220)
+    },
+    [],
+  )
+
   const tabataPhases = useMemo(() => buildPhases(tabataSettings), [tabataSettings])
   const roundsPhases = useMemo(() => buildRoundsPhases(roundsSettings), [roundsSettings])
 
@@ -140,6 +152,7 @@ export default function App() {
     totalRounds: tabataSettings.rounds,
     totalCycles: tabataSettings.cycles,
     onStart: (phase, next) => {
+      setCueDigit(null)
       flashScreen()
       if (generalSettings.workoutMusic) {
         syncWorkoutMusic(phase, true, phase.duration)
@@ -147,6 +160,7 @@ export default function App() {
       feedbackPhaseStart(phase, next)
     },
     onPhaseChange: (phase, next) => {
+      setCueDigit(null)
       flashScreen()
       if (generalSettings.workoutMusic) {
         syncWorkoutMusic(phase, true, phase.duration)
@@ -155,12 +169,14 @@ export default function App() {
     },
     onSecond: (remaining, phase) => {
       const whole = Math.ceil(remaining)
-      if (whole <= 3 && whole >= 1) flashScreen()
+      if (whole <= 3 && whole >= 1) pulseCountdownCue(whole)
+      else setCueDigit(null)
       const warning =
         phase.kind === 'work' ? Math.max(3, Math.floor(phase.duration / 2)) : 0
       onCountdownSecond(remaining, phase, warning)
     },
     onComplete: () => {
+      setCueDigit(null)
       flashScreen()
       announceDone()
     },
@@ -170,20 +186,24 @@ export default function App() {
     totalRounds: roundsSettings.rounds,
     totalCycles: 1,
     onStart: (phase, next) => {
+      setCueDigit(null)
       flashScreen()
       stopWorkoutMusic()
       feedbackPhaseStart(phase, next)
     },
     onPhaseChange: (phase, next) => {
+      setCueDigit(null)
       flashScreen()
       feedbackPhaseStart(phase, next)
     },
     onSecond: (remaining, phase) => {
       const whole = Math.ceil(remaining)
-      if (whole <= 3 && whole >= 1) flashScreen()
+      if (whole <= 3 && whole >= 1) pulseCountdownCue(whole)
+      else setCueDigit(null)
       onCountdownSecond(remaining, phase, roundsSettings.warning)
     },
     onComplete: () => {
+      setCueDigit(null)
       flashScreen()
       announceDone()
     },
@@ -443,6 +463,12 @@ export default function App() {
           : undefined
       }
     >
+      {cueDigit !== null ? (
+        <div className="countdown-burst" key={cueDigit} aria-live="assertive">
+          <span className="countdown-burst-digit">{cueDigit}</span>
+        </div>
+      ) : null}
+
       <main className="app-main">
         {tab === 'tabata' && (
           <TabataScreen

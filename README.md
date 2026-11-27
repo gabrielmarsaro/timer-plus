@@ -20,7 +20,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 3. Toque **INICIAR** — o tempo aparece em **A reproduzir** na tela bloqueada.  
 4. **Compartilhar** → **Adicionar à Tela de Início**.
 
-## Android (APK) — versão **1.5.15**
+## Android (APK) — versão **1.5.16**
 
 **https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/f5d481b69d84af1fa1e64f7ee9ca130903721637/releases/timer-plus-debug.apk**
 
@@ -32,9 +32,9 @@ Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
 
 Página de download: https://charged-link-r467sxm.shipstatic.combaixar.html
 
-## Novidades 1.5.15
+## Novidades 1.5.16
 
-- Safari: avisos em **transient** (não rouba o Spotify) e liberam com **auto**
+- Safari + Respeitar música: avisos **só visuais** (3-2-1 enorme + flash) — sem áudio, Spotify segue
 - Com Respeitar música: **3-2-1 e avisos de fase** voltam (só o tic-tac fica quieto)
 - **Safari:** abrir o app **não pausa** mais o Spotify (sem AudioContext/audioSession no load)
 - **Safari/iPhone:** avisos abaixam a música e voltam (sem `speechSynthesis`, que pausava o Spotify)

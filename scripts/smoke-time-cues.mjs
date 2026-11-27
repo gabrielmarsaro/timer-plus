@@ -1,6 +1,6 @@
 /**
- * With Respeitar música, 3-2-1 / warning cues must still fire (ducked),
- * while continuous ticks stay hush.
+ * iPhone + Respeitar música: visual 3-2-1 burst (no audioSession / no Web Audio),
+ * so Spotify is never paused.
  */
 import { chromium } from 'playwright'
 import { createServer } from 'node:http'
@@ -56,7 +56,7 @@ await page.addInitScript(() => {
       ticking: true,
       vibration: false,
       flashlight: false,
-      screenFlash: false,
+      screenFlash: true,
       rotation: true,
       lightColors: false,
       timeFormat: 'mmss',
@@ -80,6 +80,7 @@ await page.addInitScript(() => {
     htmlPlay: 0,
     sessionTypes: [],
     oscillatorStarts: 0,
+    burstDigits: [],
   }
 
   if (window.speechSynthesis) {
@@ -125,36 +126,49 @@ await page.addInitScript(() => {
       return osc
     }
   }
+
 })
 
 await page.goto('http://127.0.0.1:5184/', { waitUntil: 'networkidle' })
 await page.getByRole('button', { name: 'INICIAR', exact: true }).click()
-// prepare 4s → catch 3-2-1 + phase change cues
-await page.waitForTimeout(5500)
+
+const seen = new Set()
+for (let i = 0; i < 25; i += 1) {
+  await page.waitForTimeout(250)
+  const text = await page
+    .locator('.countdown-burst-digit')
+    .first()
+    .textContent({ timeout: 50 })
+    .catch(() => null)
+  if (text) {
+    const n = Number(text.trim())
+    if (n >= 1 && n <= 3) seen.add(n)
+  }
+  const probeLive = await page.evaluate(() => ({ ...window.__cueProbe }))
+  if (probeLive.sessionTypes.length || probeLive.oscillatorStarts) break
+}
 
 const probe = await page.evaluate(() => ({ ...window.__cueProbe }))
+const uniqueBursts = [...seen]
 const errors = []
 if (probe.speechSpeak > 0) errors.push(`speechSynthesis used ${probe.speechSpeak}`)
 if (probe.htmlPlay > 0) errors.push(`HTMLAudio.play used ${probe.htmlPlay}`)
-if (probe.oscillatorStarts < 3) {
-  errors.push(`expected Web Audio time cues, got oscillatorStarts=${probe.oscillatorStarts}`)
+if (probe.sessionTypes.length > 0) {
+  errors.push(`audioSession touched (would pause Spotify): ${probe.sessionTypes}`)
 }
-if (!probe.sessionTypes.includes('transient')) {
-  errors.push(`expected transient cues (not playback), got ${probe.sessionTypes}`)
+if (probe.oscillatorStarts > 0) {
+  errors.push(`Web Audio tones fired (${probe.oscillatorStarts}) — Safari visual-only mode`)
 }
-if (probe.sessionTypes.includes('playback')) {
-  errors.push('playback steals Spotify permanently on Safari — must not use for cues')
-}
-if (!probe.sessionTypes.includes('auto')) {
-  errors.push('expected release to auto after cues')
+if (uniqueBursts.length < 3) {
+  errors.push(`expected visual 3-2-1 burst, got ${JSON.stringify(uniqueBursts)}`)
 }
 
 if (errors.length) {
-  console.error(JSON.stringify({ probe, errors }, null, 2))
+  console.error(JSON.stringify({ probe, uniqueBursts, errors }, null, 2))
   throw new Error(errors.join('; '))
 }
 
-console.log(JSON.stringify({ ok: true, probe }))
+console.log(JSON.stringify({ ok: true, uniqueBursts, probe }))
 console.log('PASS smoke-time-cues')
 await browser.close()
 server.close()

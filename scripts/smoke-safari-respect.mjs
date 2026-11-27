@@ -1,6 +1,5 @@
 /**
- * iPhone Safari UA: with Respeitar música, never call speechSynthesis.speak /
- * HTMLAudio.play / mediaSession playing / playback|transient-solo sessions.
+ * iPhone Safari + Respeitar música: INICIAR must not touch audioSession / speech / HTMLAudio.
  */
 import { chromium } from 'playwright'
 import { createServer } from 'node:http'
@@ -56,7 +55,7 @@ await page.addInitScript(() => {
       ticking: true,
       vibration: false,
       flashlight: false,
-      screenFlash: false,
+      screenFlash: true,
       rotation: true,
       lightColors: false,
       timeFormat: 'mmss',
@@ -68,6 +67,7 @@ await page.addInitScript(() => {
     htmlPlay: 0,
     sessionTypes: [],
     mediaPlaying: 0,
+    audioContextNew: 0,
   }
 
   const speech = window.speechSynthesis
@@ -100,6 +100,18 @@ await page.addInitScript(() => {
     },
   })
 
+  const OriginalAC = window.AudioContext || window.webkitAudioContext
+  if (OriginalAC) {
+    const Patched = function AudioContextPatched(...args) {
+      window.__safariProbe.audioContextNew += 1
+      return new OriginalAC(...args)
+    }
+    Patched.prototype = OriginalAC.prototype
+    Object.setPrototypeOf(Patched, OriginalAC)
+    window.AudioContext = Patched
+    window.webkitAudioContext = Patched
+  }
+
   if (!navigator.mediaSession) {
     // @ts-expect-error stub
     navigator.mediaSession = {}
@@ -126,9 +138,8 @@ const errors = []
 if (probe.speechSpeak > 0) errors.push(`speechSynthesis.speak called ${probe.speechSpeak}×`)
 if (probe.htmlPlay > 0) errors.push(`HTMLAudio.play called ${probe.htmlPlay}×`)
 if (probe.mediaPlaying > 0) errors.push(`mediaSession playing set ${probe.mediaPlaying}×`)
-if (!probe.sessionTypes.includes('transient')) errors.push('expected transient for cues')
-if (probe.sessionTypes.includes('playback')) errors.push('playback must not be used (steals Spotify)')
-if (!probe.sessionTypes.includes('auto')) errors.push('expected release to auto')
+if (probe.sessionTypes.length > 0) errors.push(`audioSession set: ${probe.sessionTypes}`)
+if (probe.audioContextNew > 0) errors.push(`AudioContext created ${probe.audioContextNew}×`)
 
 if (errors.length) {
   console.error(JSON.stringify({ probe, errors }, null, 2))
