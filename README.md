@@ -13,7 +13,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## iPhone (Safari)
 
-**https://strong-precog-w3agq2f.shipstatic.com**
+**https://charged-link-r467sxm.shipstatic.com**
 
 1. Abra no **Safari**.  
 2. Desative o **mute lateral** se quiser alertas sonoros.  
@@ -22,7 +22,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## Android (APK) — versão **1.5.15**
 
-**https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/84a2278c7705fa20e7191ff2fa61849d877e2ac2/releases/timer-plus-debug.apk**
+**https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/f5d481b69d84af1fa1e64f7ee9ca130903721637/releases/timer-plus-debug.apk**
 
 1. Baixe no Chrome.  
 2. Permita **fontes desconhecidas** se pedir.  
@@ -30,7 +30,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
 
-Página de download: https://strong-precog-w3agq2f.shipstatic.combaixar.html
+Página de download: https://charged-link-r467sxm.shipstatic.combaixar.html
 
 ## Novidades 1.5.15
 
