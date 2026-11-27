@@ -216,40 +216,41 @@ function shouldSilenceAmbient(): boolean {
   return refreshExternalMusicState()
 }
 
+/** Prime Web Audio inside a user gesture without HTMLAudio / speech / exclusive session. */
+function unlockWebAudioOnly(): void {
+  const ctx = getCtx()
+  if (!ctx) return
+  try {
+    if (ctx.state === 'suspended') void ctx.resume().catch(() => undefined)
+    const buffer = ctx.createBuffer(1, 1, ctx.sampleRate)
+    const source = ctx.createBufferSource()
+    const gain = ctx.createGain()
+    gain.gain.value = 0.0001
+    source.buffer = buffer
+    source.connect(gain)
+    gain.connect(ctx.destination)
+    source.start(0)
+  } catch {
+    // ignore
+  }
+}
+
 /**
  * Unlock audio inside a user gesture. Must NOT await from the UI.
- * With “Respeitar música”, stay ambient and skip silent HTML plays so we
- * do not pause Spotify/Deezer on INICIAR / app open.
+ * With “Respeitar música”: unlock Web Audio only (for later 3-2-1 / phase cues).
+ * Skip HTMLAudio + speechSynthesis + audioSession claim (those pause Spotify on Safari).
  */
 export function unlockFeedback(): void {
   if (respectsExternalMusic()) {
     unlocked = true
-    // Assume external music may be playing — hush ticks until we know otherwise.
     externalMusic = true
     setExternalMusicBlocked(true)
-    // Do not set audioSession / speechSynthesis / AudioContext here — on Safari
-    // that activates AVAudioSession and pauses Spotify as soon as you tap INICIAR.
+    unlockWebAudioOnly()
     return
   }
 
   setAudioSession('ambient')
-
-  const ctx = getCtx()
-  if (ctx) {
-    try {
-      if (ctx.state === 'suspended') void ctx.resume().catch(() => undefined)
-      const buffer = ctx.createBuffer(1, 1, ctx.sampleRate)
-      const source = ctx.createBufferSource()
-      const gain = ctx.createGain()
-      gain.gain.value = 0.0001
-      source.buffer = buffer
-      source.connect(gain)
-      gain.connect(ctx.destination)
-      source.start(0)
-    } catch {
-      // ignore
-    }
-  }
+  unlockWebAudioOnly()
 
   try {
     const tick = getHtmlTick()
@@ -287,13 +288,13 @@ export function unlockFeedback(): void {
 }
 
 /**
- * Keep Web Audio awake only when we own audio. Never steal focus on tab focus
- * / app open while “Respeitar música” is on.
+ * Keep Web Audio awake for ducked cues. Never claim exclusive session on focus.
  */
 export function ensureAudioReady(): void {
   if (!unlocked) return
   if (respectsExternalMusic()) {
     refreshExternalMusicState()
+    if (audioCtx?.state === 'suspended') void audioCtx.resume().catch(() => undefined)
     return
   }
   const ctx = getCtx()
@@ -693,21 +694,23 @@ export function onCountdownSecond(remaining: number, phase: Phase | null, warnin
   const whole = Math.ceil(remaining)
   ensureAudioReady()
 
-  // Um tempo de cada vez: Spotify OU sessão Tabata com música → sem tic-tac / countdown falado.
-  const musicTempo = shouldSilenceAmbient() || isWorkoutMusicSessionActive()
+  // Respeitar música / trilha Tabata: só corta o tic-tac contínuo.
+  // Avisos de tempo (warning + 3-2-1) continuam — com duck no Safari/Android.
+  const hushTicks = shouldSilenceAmbient() || isWorkoutMusicSessionActive()
+  const tabataTrackOwnsCountdown = isWorkoutMusicSessionActive() || isWorkoutMusicAudible()
 
-  if (settings?.ticking && whole > 0 && !musicTempo) {
+  if (settings?.ticking && whole > 0 && !hushTicks) {
     playSound('tick')
     void vibrate('tick')
   }
 
-  if (warning > 0 && whole === warning && !musicTempo) {
+  if (warning > 0 && whole === warning) {
     playSound('warning')
     void vibrate('warning')
-    speak(`${warning} segundos`)
+    if (!tabataTrackOwnsCountdown) speak(`${warning} segundos`)
   }
 
-  if (!musicTempo && whole <= 3 && whole >= 1) {
+  if (whole <= 3 && whole >= 1 && !tabataTrackOwnsCountdown) {
     speak(String(whole))
   }
 }
