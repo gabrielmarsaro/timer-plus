@@ -3,6 +3,7 @@ import type { TimerStatus } from '../hooks/usePhaseTimer'
 import { PHASE_COLORS } from '../types'
 import type { Phase } from '../types'
 import {
+  ForgeMark,
   GearIcon,
   PauseIcon,
   PlayIcon,
@@ -11,6 +12,7 @@ import {
   TimerMiniIcon,
 } from './Icons'
 import { isPhaseFocusKind, PhaseHero } from './PhaseHero'
+import { PlayControl } from './PlayControl'
 
 interface RoundsScreenProps {
   status: TimerStatus
@@ -53,6 +55,13 @@ export function RoundsScreen({
 }: RoundsScreenProps) {
   const isLive = status === 'running' || status === 'paused'
   const focus = isLive && isPhaseFocusKind(currentPhase?.kind)
+  const phaseDuration =
+    status === 'idle'
+      ? Math.max(idlePrepare || phaseRemaining, 1)
+      : Math.max(currentPhase?.duration ?? phaseRemaining, 1)
+  const progress = Math.max(0, Math.min(1, phaseRemaining / phaseDuration))
+  const urgency = isLive && phaseRemaining > 0 && phaseRemaining <= 3
+  const phaseColor = currentPhase?.color ?? PHASE_COLORS.prepare
 
   const primary =
     status === 'idle'
@@ -65,7 +74,7 @@ export function RoundsScreen({
       : {
           label: currentPhase?.label ?? 'PREPARAR',
           time: formatTime(phaseRemaining, timeFormat),
-          color: currentPhase?.color ?? PHASE_COLORS.prepare,
+          color: phaseColor,
           key: [
             currentPhase?.kind ?? 'prepare',
             currentPhase?.round ?? 0,
@@ -97,7 +106,10 @@ export function RoundsScreen({
     status === 'running' ? 'PAUSAR' : status === 'paused' ? 'CONTINUAR' : 'INICIAR'
 
   return (
-    <section className={`tabata-screen${focus ? ' is-live' : ''}`}>
+    <section
+      className={`tabata-screen${focus ? ' is-live' : ''}${urgency ? ' is-urgent' : ''}`}
+      style={{ ['--phase-color' as string]: primary.color }}
+    >
       <header className="tabata-header">
         <button
           type="button"
@@ -109,7 +121,10 @@ export function RoundsScreen({
         </button>
 
         <div className="header-center">
-          <p className="brand-mark header-brand">TIMER VIKING</p>
+          <p className="brand-mark header-brand">
+            <ForgeMark className="brand-rune" />
+            TIMER VIKING
+          </p>
           <h1>RONDAS</h1>
           <p className="total-time">{formatTime(totalRemaining, timeFormat)}</p>
           {isLive ? (
@@ -140,7 +155,13 @@ export function RoundsScreen({
         </div>
       </header>
 
-      <PhaseHero focus={focus} primary={primary} secondary={secondary} />
+      <PhaseHero
+        focus={focus}
+        primary={primary}
+        secondary={secondary}
+        progress={progress}
+        urgency={urgency}
+      />
 
       {isLive ? (
         <div className="workout-adjust" role="group" aria-label="Ajustes do treino">
@@ -160,17 +181,15 @@ export function RoundsScreen({
           <p className="stat-label">RONDAS PARA TERMINAR</p>
         </div>
 
-        <div className="play-block">
-          <button
-            type="button"
-            className="play-btn"
-            onClick={onToggle}
-            aria-label={actionLabel}
-          >
-            {isRunning ? <PauseIcon /> : <PlayIcon />}
-          </button>
-          <p className="play-label">{actionLabel}</p>
-        </div>
+        <PlayControl
+          label={actionLabel}
+          running={isRunning}
+          progress={isLive ? progress : 1}
+          ringColor={isLive ? phaseColor : 'rgba(255,255,255,0.18)'}
+          onClick={onToggle}
+        >
+          {isRunning ? <PauseIcon /> : <PlayIcon className="play-glyph" />}
+        </PlayControl>
 
         {focus ? (
           <div className="stat-block">

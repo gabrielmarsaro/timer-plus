@@ -92,14 +92,14 @@ export const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   timeFormat: 'mmss',
 }
 
-/** Timer Viking — forja nórdica: ouro no esforço, gelo no descanso. */
+/** Timer Viking — ouro no esforço, gelo no descanso (tons limpos). */
 export const PHASE_COLORS: Record<PhaseKind, string> = {
-  prepare: '#E8D5A3',
-  work: '#D4A017',
-  rest: '#6EC6D4',
-  cycleRest: '#C45C26',
-  cooldown: '#7B8CDE',
-  done: '#151A24',
+  prepare: '#E6D7B0',
+  work: '#F0B429',
+  rest: '#4EC4D9',
+  cycleRest: '#E0703A',
+  cooldown: '#8B9AE8',
+  done: '#14181F',
 }
 
 export const PHASE_LABELS: Record<PhaseKind, string> = {

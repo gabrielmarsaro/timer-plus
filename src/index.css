@@ -1,18 +1,23 @@
 :root {
   color-scheme: dark;
-  /* Timer Viking — forja nórdica */
-  --bg: #0b0e12;
-  --yellow: #e8d5a3;
-  --green: #d4a017;
-  --accent: #d4a017;
-  --blue: #6ec6d4;
-  --text: #f2ede4;
-  --muted: #8b93a7;
-  --panel: #151a24;
-  --border: #2a3344;
+  /* Timer Viking — clean athletic */
+  --bg: #0a0c10;
+  --bg-mid: #12161e;
+  --yellow: #f0d9a0;
+  --green: #f0b429;
+  --accent: #f0b429;
+  --blue: #4ec4d9;
+  --text: #f5f2ea;
+  --muted: #8a92a3;
+  --panel: #14181f;
+  --border: #262c38;
+  --phase-color: #f0b429;
+  --radius-lg: 22px;
+  --radius-md: 14px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --nav-height: 72px;
-  font-family: 'Barlow Condensed', 'Arial Narrow', Impact, sans-serif;
+  --nav-height: 70px;
+  --font-ui: 'Outfit', 'Segoe UI', sans-serif;
+  font-family: var(--font-ui);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -56,8 +61,16 @@ button {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  background: var(--bg);
+  background:
+    radial-gradient(
+      ellipse 80% 45% at 50% 0%,
+      color-mix(in srgb, var(--phase-color) 10%, transparent),
+      transparent 60%
+    ),
+    var(--bg);
   position: relative;
+  overflow: hidden;
+  transition: background 360ms ease;
 }
 
 .app-main {
@@ -100,19 +113,20 @@ button {
 }
 
 .header-center h1 {
-  color: var(--yellow);
-  font-size: 1.55rem;
+  color: var(--text);
+  font-size: 1.45rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   line-height: 1;
 }
 
 .total-time {
-  margin-top: 4px;
+  margin-top: 6px;
   color: var(--yellow);
-  font-size: 1.35rem;
+  font-size: 1.05rem;
   font-weight: 600;
   letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
 }
 
 .header-right {
@@ -133,18 +147,59 @@ button {
 }
 
 .app-shell.is-flashing {
-  filter: brightness(1.55);
+  filter: brightness(1.7);
+}
+
+.countdown-burst {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  background: radial-gradient(circle at center, rgba(240, 180, 41, 0.28), transparent 62%);
+}
+
+.countdown-burst-digit {
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: clamp(7rem, 28vw, 11rem);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  color: #f5f2ea;
+  text-shadow: 0 0 40px rgba(240, 180, 41, 0.55), 0 12px 40px rgba(0, 0, 0, 0.55);
+  animation: countdown-burst-pop 520ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.countdown-burst-digit.is-go {
+  font-size: clamp(4.5rem, 22vw, 8.5rem);
+  letter-spacing: 0.06em;
+}
+
+@keyframes countdown-burst-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 0.92;
+    transform: scale(1);
+  }
 }
 
 .reset-btn {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: #1c1c1c;
-  color: #d0d0d0;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--muted);
   display: grid;
   place-items: center;
-  box-shadow: inset 0 0 0 1px #333;
+  border: 1px solid var(--border);
 }
 
 .reset-btn svg {
@@ -156,7 +211,9 @@ button {
   min-height: 0;
   display: grid;
   grid-template-rows: 1.35fr 0.9fr;
-  transition: grid-template-rows 320ms ease;
+  gap: 10px;
+  padding: 4px 12px 0;
+  transition: grid-template-rows 280ms ease;
 }
 
 .phase-stack.is-focus {
@@ -164,27 +221,27 @@ button {
   align-items: stretch;
   /* Scale animation must not steal taps from Pausar / Reiniciar */
   pointer-events: none;
+  padding-inline: 12px;
 }
 
 .phase-stack.is-focus .phase-primary.is-star {
   min-height: 100%;
   justify-content: center;
-  border-radius: 18px;
-  margin: 0 10px;
-  animation: phase-star-in 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  border-radius: var(--radius-lg);
+  animation: phase-star-in 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .phase-time-hero {
-  font-size: clamp(6.2rem, 30vw, 11rem);
-  margin-top: 10px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-size: clamp(5.4rem, 26vw, 9.5rem);
+  margin-top: 8px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
   line-height: 0.9;
   font-variant-numeric: tabular-nums;
 }
 
 .phase-stack.is-focus .phase-label {
-  font-size: clamp(2rem, 9vw, 3.2rem);
+  font-size: clamp(1.7rem, 7vw, 2.5rem);
 }
 
 @keyframes phase-star-in {
@@ -208,20 +265,33 @@ button {
 
 .header-brand {
   margin-bottom: 4px;
-  font-size: 0.72rem;
-  letter-spacing: 0.2em;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  color: var(--accent);
+}
+
+.brand-rune {
+  width: 12px;
+  height: 12px;
+  color: var(--accent);
+  flex-shrink: 0;
 }
 
 .progress-chip {
-  margin: 6px auto 0;
+  margin: 8px auto 0;
   display: inline-block;
-  padding: 3px 10px;
+  padding: 4px 10px;
   border-radius: 999px;
-  background: #1a1a1a;
-  border: 1px solid #333;
-  color: #cfcfcf;
-  font-size: 0.72rem;
-  font-weight: 700;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 600;
   letter-spacing: 0.08em;
 }
 
@@ -235,16 +305,16 @@ button {
 }
 
 .adjust-btn {
-  min-width: 96px;
-  height: 40px;
+  min-width: 92px;
+  height: 38px;
   padding: 0 14px;
-  border-radius: 12px;
-  background: #1c1c1c;
-  color: var(--yellow);
-  border: 1px solid #333;
-  font-weight: 700;
-  font-size: 0.82rem;
-  letter-spacing: 0.06em;
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -353,7 +423,7 @@ button {
 .controls-row.is-live {
   padding-top: 12px;
   padding-bottom: 12px;
-  background: var(--bg);
+  background: transparent;
   position: relative;
   z-index: 3;
 }
@@ -370,14 +440,14 @@ button {
 }
 
 .controls-row.is-live .live-reset-btn {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: #1c1c1c;
-  color: #d0d0d0;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: var(--panel);
+  color: var(--muted);
   display: grid;
   place-items: center;
-  box-shadow: inset 0 0 0 1px #333;
+  border: 1px solid var(--border);
   margin-inline: auto;
 }
 
@@ -414,10 +484,49 @@ button {
   align-items: center;
   text-align: center;
   color: #111;
-  padding: 8px 12px;
-  transition: background 180ms ease;
+  padding: 12px 16px;
+  transition: background 200ms ease, transform 280ms ease;
   width: 100%;
   border: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.phase-card {
+  border-radius: var(--radius-lg);
+}
+
+.phase-progress-bar {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: 16px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.16);
+  overflow: hidden;
+}
+
+.phase-progress-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: rgba(17, 17, 17, 0.45);
+  transition: width 160ms linear;
+}
+
+.phase-stack.is-urgent .phase-primary.is-star {
+  animation: phase-urgent-pulse 680ms ease-in-out infinite;
+}
+
+@keyframes phase-urgent-pulse {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.06);
+  }
 }
 
 button.phase-block:disabled {
@@ -446,27 +555,28 @@ button.phase-block:not(:disabled) {
 }
 
 .phase-label {
-  font-size: clamp(1.6rem, 7vw, 2.4rem);
+  font-size: clamp(1.35rem, 5.5vw, 1.9rem);
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   line-height: 1;
+  opacity: 0.88;
 }
 
 .phase-time {
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   line-height: 0.95;
   font-variant-numeric: tabular-nums;
 }
 
 .phase-time-lg {
-  font-size: clamp(4.8rem, 22vw, 7.5rem);
-  margin-top: 4px;
+  font-size: clamp(4.2rem, 20vw, 6.6rem);
+  margin-top: 6px;
 }
 
 .phase-time-md {
-  font-size: clamp(3.4rem, 16vw, 5.4rem);
-  margin-top: 2px;
+  font-size: clamp(2.8rem, 14vw, 4.4rem);
+  margin-top: 4px;
 }
 
 .controls-row {
@@ -475,7 +585,7 @@ button.phase-block:not(:disabled) {
   align-items: center;
   gap: 8px;
   padding: 18px 14px 10px;
-  background: var(--bg);
+  background: transparent;
 }
 
 .stat-block {
@@ -483,9 +593,11 @@ button.phase-block:not(:disabled) {
 }
 
 .stat-value {
-  font-size: clamp(2.8rem, 12vw, 3.8rem);
-  font-weight: 700;
+  font-size: clamp(2.3rem, 10vw, 3.2rem);
+  font-weight: 800;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
 .stat-blue {
@@ -498,13 +610,14 @@ button.phase-block:not(:disabled) {
 
 .stat-label {
   margin-top: 6px;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  line-height: 1.15;
-  color: #fff;
-  max-width: 9ch;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+  color: var(--muted);
+  max-width: 10ch;
   margin-inline: auto;
+  text-transform: uppercase;
 }
 
 .play-block {
@@ -515,20 +628,74 @@ button.phase-block:not(:disabled) {
 }
 
 .play-btn {
-  width: 86px;
-  height: 86px;
+  width: 88px;
+  height: 88px;
   border-radius: 50%;
-  background: var(--yellow);
-  color: #111;
+  background: transparent;
+  color: #0a0c10;
   display: grid;
   place-items: center;
-  box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--accent);
+  position: relative;
 }
 
-.play-btn svg {
-  width: 42px;
-  height: 42px;
-  margin-left: 3px;
+.play-ring {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+  width: 100%;
+  height: 100%;
+}
+
+.play-ring-track {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.1);
+  stroke-width: 3;
+}
+
+.play-ring-value {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dasharray 140ms linear, stroke 200ms ease;
+}
+
+.play-btn-face {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #0a0c10;
+  display: grid;
+  place-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.play-btn-face svg {
+  width: 30px;
+  height: 30px;
+}
+
+.play-btn-face .play-glyph {
+  margin-left: 2px;
+}
+
+.play-block.is-running .play-btn-face {
+  background: var(--yellow);
+}
+
+.play-block.is-urgent .play-ring-value {
+  animation: ring-urgent 680ms ease-in-out infinite;
+}
+
+@keyframes ring-urgent {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 
 .play-btn:active {
@@ -536,10 +703,10 @@ button.phase-block:not(:disabled) {
 }
 
 .play-label {
-  color: var(--yellow);
-  font-size: 1rem;
+  color: var(--text);
+  font-size: 0.85rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
 }
 
 .bottom-nav {
@@ -548,37 +715,44 @@ button.phase-block:not(:disabled) {
   right: 0;
   bottom: 0;
   height: calc(var(--nav-height) + var(--safe-bottom));
-  padding: 8px 8px calc(10px + var(--safe-bottom));
+  padding: 6px 8px calc(8px + var(--safe-bottom));
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  background: var(--bg);
-  border-top: 1px solid #151515;
-  transition: transform 320ms ease, opacity 240ms ease;
+  background: color-mix(in srgb, var(--bg) 88%, #000);
+  border-top: 1px solid var(--border);
+  transition: transform 280ms ease, opacity 220ms ease;
 }
 
 .nav-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  color: #bdbdbd;
+  gap: 3px;
+  color: var(--muted);
   min-width: 0;
+  position: relative;
 }
 
 .nav-icon-wrap {
-  width: 44px;
+  width: 40px;
   height: 28px;
   display: grid;
   place-items: center;
-  border-radius: 999px;
+  border-radius: 10px;
+  transition: color 180ms ease;
 }
 
 .nav-item.is-active .nav-icon-wrap {
-  background: #222;
+  background: transparent;
+  color: var(--accent);
 }
 
 .nav-item.is-active {
-  color: #fff;
+  color: var(--accent);
+}
+
+.nav-item.is-active::after {
+  display: none;
 }
 
 .nav-icon {
@@ -636,26 +810,24 @@ button.phase-block:not(:disabled) {
   justify-content: center;
   padding: 18px 16px 8px;
   min-height: 180px;
-  background: linear-gradient(180deg, #151a24 0%, var(--bg) 100%);
+  background: transparent;
 }
 
 .stopwatch-screen.is-live .stopwatch-stage {
-  background: linear-gradient(180deg, #2a2208 0%, var(--bg) 70%);
+  background: radial-gradient(ellipse 70% 55% at 50% 40%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 70%);
 }
 
 .stopwatch-time {
   margin: 0 auto;
   min-width: 9.2ch;
   text-align: center;
-  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: clamp(3.4rem, 14vw, 5.4rem);
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-size: clamp(3.2rem, 13vw, 5rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
   color: var(--yellow);
-  /* Prevent subpixel reflow while digits change */
   transform: translateZ(0);
 }
 
@@ -683,13 +855,13 @@ button.phase-block:not(:disabled) {
 .secondary-action-btn {
   min-width: 72px;
   padding: 14px 12px;
-  border-radius: 999px;
-  background: #1c1c1c;
-  color: #fff;
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  color: var(--text);
   font-size: 0.78rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  box-shadow: inset 0 0 0 1px #333;
+  letter-spacing: 0.06em;
+  border: 1px solid var(--border);
 }
 
 .secondary-action-btn.is-disabled,
@@ -735,19 +907,19 @@ button.phase-block:not(:disabled) {
 
 .lap-split {
   text-align: center;
-  font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
   font-size: 1.05rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
   color: #fff;
 }
 
 .lap-total {
   text-align: right;
-  font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
   font-size: 0.92rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
   color: var(--yellow);
 }
 
@@ -1262,47 +1434,6 @@ button.phase-block:not(:disabled) {
   font-weight: 500;
 }
 
-.ios-audio-tip {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: calc(18px + var(--safe-bottom));
-  z-index: 40;
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding: 14px 14px 14px 16px;
-  border-radius: 16px;
-  background: rgba(20, 20, 20, 0.96);
-  border: 1px solid #3a3a3a;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
-}
-
-.ios-audio-tip p {
-  flex: 1;
-  color: #eee;
-  font-size: 0.78rem;
-  line-height: 1.35;
-  letter-spacing: 0.02em;
-  font-family: system-ui, -apple-system, sans-serif;
-  font-weight: 500;
-}
-
-.ios-audio-tip strong {
-  color: var(--yellow);
-}
-
-.ios-audio-tip-ok {
-  flex-shrink: 0;
-  padding: 10px 14px;
-  border-radius: 12px;
-  background: var(--yellow);
-  color: #111;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  font-size: 0.85rem;
-}
-
 .native-row {
   display: flex;
   align-items: center;
@@ -1676,6 +1807,19 @@ html[data-allow-rotation='false'] body {
   background: #e8e8e8;
   border-color: #ccc;
   color: #222;
+}
+
+.app-shell.theme-light .play-btn-face {
+  background: var(--accent);
+}
+
+.app-shell.theme-light .bottom-nav {
+  background: #f3f3f3;
+  border-top-color: #ddd;
+}
+
+.app-shell.theme-light {
+  background: #f4f4f4;
 }
 
 .app-shell.theme-light .coach-card {

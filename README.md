@@ -13,16 +13,16 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## iPhone (Safari)
 
-**https://luminous-rune-4ecwa6s.shipstatic.com/**
+**https://pristine-grid-ws4g3d4.shipstatic.com**
 
 1. Abra no **Safari**.  
 2. Desative o **mute lateral** se quiser alertas sonoros.  
 3. Toque **INICIAR** — o tempo aparece em **A reproduzir** na tela bloqueada.  
 4. **Compartilhar** → **Adicionar à Tela de Início**.
 
-## Android (APK) — versão **1.5.2**
+## Android (APK) — versão **1.5.18**
 
-**https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/5b102543d7a64ac2fefd9ff23b19fe10b670451b/releases/timer-plus-debug.apk**
+**https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/cf44299de3ddae7b04b0a2a54ca5fc3112a97251/releases/timer-plus-debug.apk**
 
 1. Baixe no Chrome.  
 2. Permita **fontes desconhecidas** se pedir.  
@@ -30,10 +30,18 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
 
-Página de download: https://luminous-rune-4ecwa6s.shipstatic.com/baixar.html
+Página de download: https://pristine-grid-ws4g3d4.shipstatic.com/baixar.html
 
-## Novidades 1.5.2
+## Novidades 1.5.18
 
+- Voz: **“10 segundos”** e contagem **3, 2, 1, Go** no início do esforço
+- Com Respeitar música: bips 3-2-1 / fase (Android abaixa e devolve; iPhone bip + número/GO na tela)
+- Só o tic-tac e a trilha do app ficam quietos com música externa
+- **Safari:** abrir o app **não pausa** mais o Spotify (sem AudioContext/audioSession no load)
+- **Safari/iPhone:** avisos abaixam a música e voltam (sem `speechSynthesis`, que pausava o Spotify)
+- Avisos/voz **abaixam** a música de fundo e **devolvem** o volume (sem pausar o Spotify)
+- Abrir o app **não para** a música do Spotify/Deezer/YouTube (Respeitar música)
+- Sem aviso de instruções do iPhone ao iniciar
 - **Pular** fase e **+15s** no meio do treino
 - Mudar de aba / editar **não mata** a sessão ativa
 - Onboarding na 1.ª abertura (mute / A2HS / APK)

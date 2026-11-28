@@ -80,8 +80,9 @@ function ensureMaster(ctx: AudioContext): GainNode {
 }
 
 function setMasterGain(level: number, when = 0): void {
-  const ctx = getCtx()
-  if (!ctx || !master) return
+  // Never construct AudioContext just to mute — that pauses Spotify on Safari open.
+  if (!sharedCtx || !master) return
+  const ctx = sharedCtx
   const t = Math.max(ctx.currentTime, when)
   master.gain.cancelScheduledValues(t)
   master.gain.setTargetAtTime(level, t, 0.045)

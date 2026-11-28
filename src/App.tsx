@@ -1,10 +1,16 @@
 import { Capacitor } from '@capacitor/core'
 import { StatusBar, Style } from '@capacitor/status-bar'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react'
 import { BottomNav } from './components/BottomNav'
 import { GeneralSettingsModal } from './components/GeneralSettingsModal'
 import { FirstRunCoach } from './components/FirstRunCoach'
-import { IosAudioTip } from './components/IosAudioTip'
 import { MoreScreen } from './components/MoreScreen'
 import { RoundsScreen } from './components/RoundsScreen'
 import { StopwatchScreen } from './components/StopwatchScreen'
@@ -18,7 +24,6 @@ import {
   configureFeedback,
   ensureAudioReady,
   feedbackPhaseStart,
-  isAppleTouchWeb,
   onCountdownSecond,
   previewSound,
   unlockFeedback,
@@ -114,7 +119,8 @@ export default function App() {
   const [generalOpen, setGeneralOpen] = useState(false)
   const [workoutEditOpen, setWorkoutEditOpen] = useState(false)
   const [screenFlash, setScreenFlash] = useState(false)
-  const [iosAudioTip, setIosAudioTip] = useState(false)
+  /** Big on-screen 3-2-1 / GO cue. */
+  const [cueDigit, setCueDigit] = useState<number | 'GO' | null>(null)
   const [coachOpen, setCoachOpen] = useState(() => {
     try {
       return localStorage.getItem('timer-viking:onboarding-v1') !== '1'
@@ -129,6 +135,15 @@ export default function App() {
     window.setTimeout(() => setScreenFlash(false), 160)
   }, [generalSettings.screenFlash])
 
+  const pulseCountdownCue = useCallback((digit: number | 'GO') => {
+    setCueDigit(digit)
+    setScreenFlash(true)
+    window.setTimeout(() => setScreenFlash(false), 220)
+    if (digit === 'GO') {
+      window.setTimeout(() => setCueDigit((cur) => (cur === 'GO' ? null : cur)), 700)
+    }
+  }, [])
+
   const tabataPhases = useMemo(() => buildPhases(tabataSettings), [tabataSettings])
   const roundsPhases = useMemo(() => buildRoundsPhases(roundsSettings), [roundsSettings])
 
@@ -136,6 +151,8 @@ export default function App() {
     totalRounds: tabataSettings.rounds,
     totalCycles: tabataSettings.cycles,
     onStart: (phase, next) => {
+      if (phase.kind === 'work') pulseCountdownCue('GO')
+      else setCueDigit(null)
       flashScreen()
       if (generalSettings.workoutMusic) {
         syncWorkoutMusic(phase, true, phase.duration)
@@ -143,6 +160,8 @@ export default function App() {
       feedbackPhaseStart(phase, next)
     },
     onPhaseChange: (phase, next) => {
+      if (phase.kind === 'work') pulseCountdownCue('GO')
+      else setCueDigit(null)
       flashScreen()
       if (generalSettings.workoutMusic) {
         syncWorkoutMusic(phase, true, phase.duration)
@@ -150,11 +169,14 @@ export default function App() {
       feedbackPhaseStart(phase, next)
     },
     onSecond: (remaining, phase) => {
-      const warning =
-        phase.kind === 'work' ? Math.max(3, Math.floor(phase.duration / 2)) : 0
+      const whole = Math.ceil(remaining)
+      if (whole <= 3 && whole >= 1) pulseCountdownCue(whole)
+      else setCueDigit((cur) => (cur === 'GO' ? cur : null))
+      const warning = phase.duration > 10 ? 10 : 0
       onCountdownSecond(remaining, phase, warning)
     },
     onComplete: () => {
+      setCueDigit(null)
       flashScreen()
       announceDone()
     },
@@ -164,18 +186,26 @@ export default function App() {
     totalRounds: roundsSettings.rounds,
     totalCycles: 1,
     onStart: (phase, next) => {
+      if (phase.kind === 'work') pulseCountdownCue('GO')
+      else setCueDigit(null)
       flashScreen()
       stopWorkoutMusic()
       feedbackPhaseStart(phase, next)
     },
     onPhaseChange: (phase, next) => {
+      if (phase.kind === 'work') pulseCountdownCue('GO')
+      else setCueDigit(null)
       flashScreen()
       feedbackPhaseStart(phase, next)
     },
     onSecond: (remaining, phase) => {
+      const whole = Math.ceil(remaining)
+      if (whole <= 3 && whole >= 1) pulseCountdownCue(whole)
+      else setCueDigit((cur) => (cur === 'GO' ? cur : null))
       onCountdownSecond(remaining, phase, roundsSettings.warning)
     },
     onComplete: () => {
+      setCueDigit(null)
       flashScreen()
       announceDone()
     },
@@ -190,6 +220,17 @@ export default function App() {
 
   useWakeLock(activeRunning)
 
+  // Lock screen: only whole displayed seconds (ceil) — never every rAF float tick.
+  const tabataLockSec = Math.ceil(tabata.phaseRemaining)
+  const roundsLockSec = Math.ceil(rounds.phaseRemaining)
+  const stopwatchLockSec = Math.floor(stopwatch.elapsedMs / 1000)
+  const tabataRef = useRef(tabata)
+  const roundsRef = useRef(rounds)
+  const stopwatchRef = useRef(stopwatch)
+  tabataRef.current = tabata
+  roundsRef.current = rounds
+  stopwatchRef.current = stopwatch
+
   // Lock screen Now Playing (Safari) / Media Session notification (Android).
   useEffect(() => {
     const tabataLive =
@@ -197,23 +238,25 @@ export default function App() {
       (tabata.status === 'running' || tabata.status === 'paused') &&
       tabata.currentPhase
     if (tabataLive && tabata.currentPhase) {
+      const phase = tabata.currentPhase
       syncLockScreen(
         {
           mode: 'tabata',
-          phaseLabel: tabata.currentPhase.label || PHASE_LABELS[tabata.currentPhase.kind],
-          seconds: tabata.phaseRemaining,
-          durationSeconds: tabata.currentPhase.duration,
+          phaseLabel: phase.label || PHASE_LABELS[phase.kind],
+          seconds: tabataLockSec,
+          durationSeconds: phase.duration,
           running: tabata.status === 'running',
           paused: tabata.status === 'paused',
         },
         (action) => {
+          const t = tabataRef.current
           if (action === 'pause') {
             pauseWorkoutMusic()
-            tabata.pause()
+            t.pause()
           } else if (action === 'resume') {
-            void tabata.resume()
+            void t.resume()
           } else if (action === 'stop') {
-            tabata.reset()
+            t.reset()
             stopWorkoutMusic()
           }
         },
@@ -225,19 +268,21 @@ export default function App() {
       (rounds.status === 'running' || rounds.status === 'paused') &&
       rounds.currentPhase
     if (roundsLive && rounds.currentPhase) {
+      const phase = rounds.currentPhase
       syncLockScreen(
         {
           mode: 'rounds',
-          phaseLabel: rounds.currentPhase.label || PHASE_LABELS[rounds.currentPhase.kind],
-          seconds: rounds.phaseRemaining,
-          durationSeconds: rounds.currentPhase.duration,
+          phaseLabel: phase.label || PHASE_LABELS[phase.kind],
+          seconds: roundsLockSec,
+          durationSeconds: phase.duration,
           running: rounds.status === 'running',
           paused: rounds.status === 'paused',
         },
         (action) => {
-          if (action === 'pause') rounds.pause()
-          else if (action === 'resume') void rounds.resume()
-          else if (action === 'stop') rounds.reset()
+          const r = roundsRef.current
+          if (action === 'pause') r.pause()
+          else if (action === 'resume') void r.resume()
+          else if (action === 'stop') r.reset()
         },
       )
       return
@@ -250,33 +295,31 @@ export default function App() {
         {
           mode: 'stopwatch',
           phaseLabel: 'Cronómetro',
-          seconds: stopwatch.elapsedMs / 1000,
-          durationSeconds: Math.max(60, stopwatch.elapsedMs / 1000 + 1),
+          seconds: stopwatchLockSec,
+          durationSeconds: Math.max(60, stopwatchLockSec + 1),
           running: stopwatch.status === 'running',
           paused: stopwatch.status === 'paused',
         },
         (action) => {
-          if (action === 'pause') stopwatch.pause()
-          else if (action === 'resume') stopwatch.resume()
-          else if (action === 'stop') stopwatch.reset()
+          const s = stopwatchRef.current
+          if (action === 'pause') s.pause()
+          else if (action === 'resume') s.resume()
+          else if (action === 'stop') s.reset()
         },
       )
       return
     }
     stopLockScreen()
   }, [
-    rounds,
-    stopwatch,
     tab,
-    tabata,
     tabata.currentPhase,
-    tabata.phaseRemaining,
     tabata.status,
+    tabataLockSec,
     rounds.currentPhase,
-    rounds.phaseRemaining,
     rounds.status,
-    stopwatch.elapsedMs,
+    roundsLockSec,
     stopwatch.status,
+    stopwatchLockSec,
   ])
 
   useEffect(() => {
@@ -314,22 +357,13 @@ export default function App() {
     if (tabata.status === 'idle') stopWorkoutMusic()
   }, [tab, tabata.status, tabata.currentPhase, tabata.phaseRemaining])
 
-  useEffect(() => {
-    const warmVoices = () => {
-      try {
-        window.speechSynthesis?.getVoices()
-      } catch {
-        // ignore
-      }
-    }
-    warmVoices()
-    window.speechSynthesis?.addEventListener?.('voiceschanged', warmVoices)
-    return () => window.speechSynthesis?.removeEventListener?.('voiceschanged', warmVoices)
-  }, [])
+  // Do not call speechSynthesis.getVoices() on mount — on Safari that can
+  // activate the audio session and pause Spotify as soon as the app opens.
 
   useEffect(() => {
     const onVisible = () => {
-      if (document.visibilityState === 'visible') void ensureAudioReady()
+      // ensureAudioReady no-ops AudioContext resume when “Respeitar música” is on.
+      if (document.visibilityState === 'visible') ensureAudioReady()
     }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
@@ -344,15 +378,6 @@ export default function App() {
       color: generalSettings.lightColors ? '#f4f4f4' : '#0B0E12',
     })
   }, [generalSettings.lightColors])
-
-  const maybeShowIosTip = () => {
-    if (!isAppleTouchWeb()) return
-    const seen = sessionStorage.getItem('timer-plus:ios-audio-tip')
-    if (!seen) {
-      sessionStorage.setItem('timer-plus:ios-audio-tip', '1')
-      window.setTimeout(() => setIosAudioTip(true), 500)
-    }
-  }
 
   /** Só um cronómetro ativo: ao iniciar um, zera os outros. */
   const stopOtherActivities = useCallback(
@@ -392,7 +417,6 @@ export default function App() {
         return
       }
       stopOtherActivities(kind)
-      maybeShowIosTip()
       void timer.start()
     }
 
@@ -409,7 +433,6 @@ export default function App() {
     }
     stopOtherActivities('stopwatch')
     stopWorkoutMusic()
-    maybeShowIosTip()
     stopwatch.start()
     previewSound()
   }
@@ -424,12 +447,34 @@ export default function App() {
     (tab === 'tabata' && tabata.status !== 'idle') ||
     (tab === 'rounds' && rounds.status !== 'idle')
 
+  const livePhaseColor =
+    tab === 'tabata' && tabata.currentPhase
+      ? tabata.currentPhase.color
+      : tab === 'rounds' && rounds.currentPhase
+        ? rounds.currentPhase.color
+        : undefined
+
   return (
     <div
       className={`app-shell${screenFlash ? ' is-flashing' : ''}${
         generalSettings.lightColors ? ' theme-light' : ''
       }${timerLive ? ' is-timer-live' : ''}`}
+      style={
+        livePhaseColor
+          ? ({ ['--phase-color' as string]: livePhaseColor } as CSSProperties)
+          : undefined
+      }
     >
+      {cueDigit !== null ? (
+        <div className="countdown-burst" key={cueDigit} aria-live="assertive">
+          <span
+            className={`countdown-burst-digit${cueDigit === 'GO' ? ' is-go' : ''}`}
+          >
+            {cueDigit}
+          </span>
+        </div>
+      ) : null}
+
       <main className="app-main">
         {tab === 'tabata' && (
           <TabataScreen
@@ -512,8 +557,6 @@ export default function App() {
       </main>
 
       <BottomNav active={tab} onChange={selectTab} />
-
-      <IosAudioTip open={iosAudioTip} onClose={() => setIosAudioTip(false)} />
 
       <FirstRunCoach
         open={coachOpen}

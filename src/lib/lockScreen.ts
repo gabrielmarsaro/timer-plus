@@ -1,24 +1,32 @@
 import { MediaSession } from '@capgo/capacitor-media-session'
+import { respectsExternalMusic } from './feedback'
 import { formatTime } from './format'
 
 /**
  * iPhone Safari / PWA Now Playing + Android Capgo MediaSession.
  *
- * Safari needs a playing HTMLAudioElement (with audioSession "playback") to
- * keep Now Playing on the lock screen. We loop lock-keepalive.wav at volume 0
- * so there is no audible hum — Media Session metadata still carries the time.
+ * Keep-alive: silent WAV at volume 0 (never muted — drops Now Playing on iOS).
+ * Metadata updates are throttled to whole seconds — regenerating artwork or
+ * poking Media Session every rAF frame freezes Safari on iPhone.
+ *
+ * With “Respeitar música”: never claim exclusive playback / Capgo foreground
+ * session / keepalive — those pause Spotify when the app opens or starts.
  */
 
-const KEEP_ALIVE_SRC = `${import.meta.env.BASE_URL}lock-keepalive.wav`
+/** v2 = true silence (all-zero samples). Bump when replacing the asset. */
+const KEEP_ALIVE_SRC = `${import.meta.env.BASE_URL}lock-keepalive.wav?v=silent2`
 
 let audio: HTMLAudioElement | null = null
 let metaTimer: number | null = null
 let handlersWired = false
+let artworkCacheKey = ''
 let artworkUrl: string | null = null
-let lastFingerprint = ''
+let lastPublishKey = ''
+let lastPlaybackState: 'playing' | 'paused' | 'none' = 'none'
 let latestPayload: LockScreenPayload | null = null
 let actionCallback: ((action: LockScreenAction) => void) | null = null
 let visibilityWired = false
+let positionCleared = false
 
 export interface LockScreenPayload {
   mode: 'tabata' | 'rounds' | 'stopwatch'
@@ -34,16 +42,24 @@ export type LockScreenAction = 'pause' | 'resume' | 'stop'
 
 type AudioSessionLike = { type: string }
 
-function setPlaybackAudioSession(): void {
+function setAudioSessionType(type: 'playback' | 'ambient'): void {
   try {
     const nav = navigator as Navigator & { audioSession?: AudioSessionLike }
     if (nav.audioSession) {
-      // Safari 17+: keeps audio eligible for lock-screen Now Playing.
-      nav.audioSession.type = 'playback'
+      nav.audioSession.type = type
     }
   } catch {
     // ignore
   }
+}
+
+function setPlaybackAudioSession(): void {
+  // Exclusive playback stops other apps — only when user turned off “Respeitar música”.
+  setAudioSessionType(respectsExternalMusic() ? 'ambient' : 'playback')
+}
+
+function mixWithOthers(): boolean {
+  return respectsExternalMusic()
 }
 
 function ensureAudio(): HTMLAudioElement | null {
@@ -53,17 +69,15 @@ function ensureAudio(): HTMLAudioElement | null {
     const el = new Audio(KEEP_ALIVE_SRC)
     el.loop = true
     el.preload = 'auto'
-    // Volume 0 = inaudible. Do not set muted=true — that drops Now Playing on iOS.
     el.volume = 0
     el.muted = false
     el.setAttribute('playsinline', 'true')
     el.setAttribute('webkit-playsinline', 'true')
     el.setAttribute('data-lock-keepalive', 'true')
     el.style.display = 'none'
-    // Helpful for some WebKit builds.
     ;(el as HTMLAudioElement & { disableRemotePlayback?: boolean }).disableRemotePlayback = false
-    // Attaching to DOM improves Now Playing reliability on iOS Safari.
     document.body.appendChild(el)
+    el.load()
     audio = el
     return el
   } catch {
@@ -71,36 +85,78 @@ function ensureAudio(): HTMLAudioElement | null {
   }
 }
 
-function ensureArtwork(): string {
-  if (artworkUrl) return artworkUrl
+function wholeSeconds(payload: LockScreenPayload): number {
+  // Countdown UIs show ceil-ish remaining; floor is stable enough for lock text.
+  return Math.max(0, Math.floor(payload.seconds))
+}
+
+function timeTextFor(payload: LockScreenPayload): string {
+  if (payload.mode === 'stopwatch') return formatStopwatchSeconds(payload.seconds)
+  return formatTime(wholeSeconds(payload), 'mmss')
+}
+
+function publishKey(payload: LockScreenPayload): string {
+  return [
+    payload.mode,
+    payload.phaseLabel,
+    timeTextFor(payload),
+    payload.running ? '1' : '0',
+    payload.paused ? '1' : '0',
+  ].join('|')
+}
+
+/**
+ * Compact cover with big digits. JPEG + 256px keeps this cheap enough for
+ * once-per-second updates on iPhone Safari.
+ */
+function artworkFor(payload: LockScreenPayload): string {
+  const timeText = timeTextFor(payload)
+  const phase = (payload.phaseLabel || 'TIMER').toUpperCase()
+  const cacheKey = `${timeText}|${phase}|${payload.paused ? 'p' : 'r'}`
+  if (artworkUrl && artworkCacheKey === cacheKey) return artworkUrl
+
   try {
+    const size = 256
     const canvas = document.createElement('canvas')
-    canvas.width = 512
-    canvas.height = 512
+    canvas.width = size
+    canvas.height = size
     const ctx = canvas.getContext('2d')
-    if (!ctx) return ''
-    ctx.fillStyle = '#0B0E12'
-    ctx.fillRect(0, 0, 512, 512)
-    ctx.fillStyle = '#D4A017'
-    ctx.beginPath()
-    // Shield silhouette
-    ctx.moveTo(256, 64)
-    ctx.lineTo(400, 120)
-    ctx.lineTo(400, 280)
-    ctx.quadraticCurveTo(400, 380, 256, 448)
-    ctx.quadraticCurveTo(112, 380, 112, 280)
-    ctx.lineTo(112, 120)
-    ctx.closePath()
-    ctx.fill()
-    ctx.fillStyle = '#0B0E12'
-    ctx.font = 'bold 110px system-ui, sans-serif'
+    if (!ctx) return artworkUrl ?? ''
+
+    ctx.fillStyle = '#0A0C10'
+    ctx.fillRect(0, 0, size, size)
+
+    ctx.fillStyle = '#F0B429'
+    ctx.font = '700 22px system-ui, sans-serif'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillText('TV', 256, 268)
-    artworkUrl = canvas.toDataURL('image/png')
+    ctx.fillText(phase.slice(0, 16), size / 2, 64)
+
+    const digitSize = timeText.length > 5 ? 56 : 72
+    ctx.fillStyle = '#F5F2EA'
+    ctx.font = `800 ${digitSize}px system-ui, sans-serif`
+    ctx.fillText(timeText, size / 2, size / 2 + 6)
+
+    ctx.fillStyle = '#8A92A3'
+    ctx.font = '600 14px system-ui, sans-serif'
+    ctx.fillText(payload.paused ? 'PAUSADO' : 'TIMER VIKING', size / 2, 198)
+
+    artworkCacheKey = cacheKey
+    // JPEG is ~10–20× smaller than PNG for this graphic.
+    artworkUrl = canvas.toDataURL('image/jpeg', 0.72)
     return artworkUrl
   } catch {
-    return ''
+    return artworkUrl ?? ''
+  }
+}
+
+function clearPositionBar(): void {
+  if (positionCleared) return
+  positionCleared = true
+  try {
+    navigator.mediaSession?.setPositionState?.()
+  } catch {
+    // ignore
   }
 }
 
@@ -116,25 +172,21 @@ function formatStopwatchSeconds(totalSeconds: number): string {
 }
 
 function buildLabels(payload: LockScreenPayload): { title: string; artist: string; album: string } {
-  const timeText =
-    payload.mode === 'stopwatch'
-      ? formatStopwatchSeconds(payload.seconds)
-      : formatTime(payload.seconds, 'mmss')
+  const timeText = timeTextFor(payload)
 
   if (payload.mode === 'stopwatch') {
     return {
       title: timeText,
-      artist: 'Cronómetro · Timer Viking',
+      artist: payload.paused ? 'Pausado · Cronómetro' : 'Cronómetro',
       album: 'Timer Viking',
     }
   }
 
-  const phase = payload.phaseLabel || 'Timer Viking'
-  // Time first — lock screen Now Playing shows title largest on iPhone.
+  const phase = payload.phaseLabel || 'Treino'
   return {
-    title: `${timeText} · ${phase}`,
-    artist: payload.paused ? 'Pausado · Timer Viking' : 'Timer Viking',
-    album: payload.mode === 'tabata' ? 'Tabata' : 'Rondas',
+    title: timeText,
+    artist: payload.paused ? `${phase} · Pausado` : phase,
+    album: payload.mode === 'tabata' ? 'Tabata · Timer Viking' : 'Rondas · Timer Viking',
   }
 }
 
@@ -159,74 +211,47 @@ async function wireHandlers(): Promise<void> {
   }
 }
 
-function pushWebSession(payload: LockScreenPayload): void {
+function pushWebSession(payload: LockScreenPayload, forceArtwork: boolean): void {
   if (!('mediaSession' in navigator)) return
+  // Claiming Now Playing / playbackState "playing" on Safari steals Spotify.
+  if (mixWithOthers()) return
   const { title, artist, album } = buildLabels(payload)
   try {
-    const art = ensureArtwork()
+    const art = forceArtwork || !artworkUrl ? artworkFor(payload) : artworkUrl
     navigator.mediaSession.metadata = new MediaMetadata({
       title,
       artist,
       album,
       artwork: art
-        ? [
-            { src: art, sizes: '512x512', type: 'image/png' },
-            { src: art, sizes: '256x256', type: 'image/png' },
-          ]
+        ? [{ src: art, sizes: '256x256', type: 'image/jpeg' }]
         : [],
     })
     navigator.mediaSession.playbackState = payload.paused ? 'paused' : 'playing'
-    const duration = Math.max(1, payload.durationSeconds ?? Math.max(1, payload.seconds))
-    const position =
-      payload.mode === 'stopwatch'
-        ? Math.min(duration, payload.seconds)
-        : Math.max(0, duration - payload.seconds)
-    navigator.mediaSession.setPositionState?.({
-      duration,
-      position: Math.min(duration, Math.max(0, position)),
-      playbackRate: 1,
-    })
+    clearPositionBar()
   } catch {
     // ignore
   }
 }
 
-async function pushNativeSession(payload: LockScreenPayload): Promise<void> {
+async function pushNativeSession(payload: LockScreenPayload, forceArtwork: boolean): Promise<void> {
+  // Capgo starts a MEDIA_PLAYBACK foreground service + setActive(true), which
+  // requests Android audio focus and pauses Spotify. Skip while mixing.
+  if (mixWithOthers()) return
   const { title, artist, album } = buildLabels(payload)
-  const art = ensureArtwork()
-  const fingerprint = `${title}|${artist}|${payload.running}|${payload.paused}`
+  const art = forceArtwork || !artworkUrl ? artworkFor(payload) : artworkUrl
   await wireHandlers()
-  if (fingerprint !== lastFingerprint) {
-    lastFingerprint = fingerprint
-    await MediaSession.setMetadata({
-      title,
-      artist,
-      album,
-      artwork: art
-        ? [
-            { src: art, sizes: '512x512', type: 'image/png' },
-            { src: art, sizes: '256x256', type: 'image/png' },
-          ]
-        : undefined,
-    })
-  }
-  const duration = Math.max(1, payload.durationSeconds ?? Math.max(1, payload.seconds))
-  const position =
-    payload.mode === 'stopwatch'
-      ? Math.min(duration, payload.seconds)
-      : Math.max(0, duration - payload.seconds)
-  try {
-    await MediaSession.setPositionState({
-      duration,
-      position: Math.min(duration, Math.max(0, position)),
-      playbackRate: 1,
-    })
-  } catch {
-    // ignore
-  }
-  await MediaSession.setPlaybackState({
-    playbackState: payload.paused ? 'paused' : 'playing',
+  await MediaSession.setMetadata({
+    title,
+    artist,
+    album,
+    artwork: art ? [{ src: art, sizes: '256x256', type: 'image/jpeg' }] : undefined,
   })
+  const nextState = payload.paused ? 'paused' : 'playing'
+  if (lastPlaybackState !== nextState) {
+    lastPlaybackState = nextState
+    nativeSessionEverStarted = true
+    await MediaSession.setPlaybackState({ playbackState: nextState })
+  }
 }
 
 function wireVisibilityResume(): void {
@@ -234,40 +259,47 @@ function wireVisibilityResume(): void {
   visibilityWired = true
   const resume = () => {
     if (!latestPayload?.running) return
+    if (mixWithOthers()) {
+      // Do not touch audioSession / keepalive on focus (Safari pauses Spotify).
+      return
+    }
     setPlaybackAudioSession()
     const el = ensureAudio()
     if (el && el.paused) void el.play().catch(() => undefined)
-    if (latestPayload) publishMetadata(latestPayload)
+    if (latestPayload) publishMetadata(latestPayload, true)
   }
   document.addEventListener('visibilitychange', resume)
   window.addEventListener('pageshow', resume)
   window.addEventListener('focus', resume)
 }
 
-function publishMetadata(payload: LockScreenPayload): void {
-  // Web/Safari path is the critical one for iPhone.
-  pushWebSession(payload)
-  void pushNativeSession(payload).catch(() => undefined)
+function publishMetadata(payload: LockScreenPayload, force = false): void {
+  const key = publishKey(payload)
+  if (!force && key === lastPublishKey) return
+  lastPublishKey = key
+  // Refresh cover when the displayed second/phase changes.
+  pushWebSession(payload, true)
+  void pushNativeSession(payload, true).catch(() => undefined)
 }
 
 function startMetaLoop(): void {
   if (metaTimer !== null) return
-  // Refresh Now Playing title every second while locked (JS may throttle more,
-  // but audio keep-alive keeps the process eligible on iOS).
+  // When the tab is backgrounded, React/rAF stalls — keep title fresh cheaply.
   metaTimer = window.setInterval(() => {
     if (!latestPayload) return
-    if (latestPayload.running || latestPayload.paused) {
-      publishMetadata(latestPayload)
-      const el = ensureAudio()
-      if (el && latestPayload.running && el.paused) {
-        void el.play().catch(() => undefined)
-      }
+    if (!(latestPayload.running || latestPayload.paused)) return
+    publishMetadata(latestPayload)
+    if (mixWithOthers()) return
+    const el = ensureAudio()
+    if (el && latestPayload.running && el.paused) {
+      void el.play().catch(() => undefined)
     }
   }, 1000)
 }
 
 /**
- * Keep media session + keep-alive tone so iPhone lock screen shows the timer.
+ * Keep media session + keep-alive so iPhone lock screen shows the timer.
+ * Safe to call every React render — heavy work only runs once per whole second.
  */
 export function syncLockScreen(
   payload: LockScreenPayload | null,
@@ -280,17 +312,33 @@ export function syncLockScreen(
 
   latestPayload = payload
   actionCallback = onAction ?? null
-  setPlaybackAudioSession()
+  if (!mixWithOthers()) {
+    lockAudioClaimed = true
+    setPlaybackAudioSession()
+  }
+  // Mixing: do not touch audioSession at all (Safari pauses Spotify on any claim).
   wireVisibilityResume()
   startMetaLoop()
 
-  const el = ensureAudio()
-  if (el) {
-    if (payload.running && el.paused) {
-      void el.play().catch(() => undefined)
+  if (!mixWithOthers()) {
+    const el = ensureAudio()
+    if (el) {
+      el.volume = 0
+      el.muted = false
+      if (payload.running && el.paused) {
+        void el.play().catch(() => undefined)
+      }
+      if (payload.paused && !el.paused) {
+        el.pause()
+      }
     }
-    if (payload.paused && !el.paused) {
-      el.pause()
+  } else if (audio && !audio.paused) {
+    // Preference flipped on mid-run — release exclusive keepalive.
+    try {
+      audio.pause()
+      audio.currentTime = 0
+    } catch {
+      // ignore
     }
   }
 
@@ -299,19 +347,32 @@ export function syncLockScreen(
 
 /** Must run inside a user gesture (INICIAR) so Safari unlocks audio + Now Playing. */
 export function primeLockScreenAudio(): void {
+  if (mixWithOthers()) {
+    // Do not touch audioSession / keepalive — opening or starting must not pause Spotify.
+    return
+  }
+  lockAudioClaimed = true
   setPlaybackAudioSession()
   const el = ensureAudio()
   if (!el) return
-  // Start then keep playing — do NOT pause after prime on iOS or Now Playing never attaches.
   void el.play().catch(() => undefined)
   if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
     void Notification.requestPermission().catch(() => undefined)
   }
 }
 
+let nativeSessionEverStarted = false
+/** True only after we intentionally claimed an audio session / media session. */
+let lockAudioClaimed = false
+
 export async function stopLockScreen(): Promise<void> {
+  const hadClaim = lockAudioClaimed || nativeSessionEverStarted || handlersWired || Boolean(audio)
   latestPayload = null
-  lastFingerprint = ''
+  lastPublishKey = ''
+  lastPlaybackState = 'none'
+  artworkCacheKey = ''
+  artworkUrl = null
+  positionCleared = false
   actionCallback = null
   if (metaTimer !== null) {
     window.clearInterval(metaTimer)
@@ -325,11 +386,22 @@ export async function stopLockScreen(): Promise<void> {
       // ignore
     }
   }
-  try {
-    await MediaSession.setPlaybackState({ playbackState: 'none' })
-  } catch {
-    // ignore
+  // Idle mount / first open: do nothing. Touching audioSession or Media Session
+  // on Safari activates AVAudioSession and pauses Spotify immediately.
+  if (!hadClaim) {
+    lockAudioClaimed = false
+    return
   }
+  if (nativeSessionEverStarted || handlersWired) {
+    try {
+      await MediaSession.setPlaybackState({ playbackState: 'none' })
+    } catch {
+      // ignore
+    }
+    nativeSessionEverStarted = false
+  }
+  setAudioSessionType('ambient')
+  lockAudioClaimed = false
   if ('mediaSession' in navigator) {
     try {
       navigator.mediaSession.playbackState = 'none'
@@ -337,6 +409,11 @@ export async function stopLockScreen(): Promise<void> {
       navigator.mediaSession.setActionHandler('pause', null)
       navigator.mediaSession.setActionHandler('play', null)
       navigator.mediaSession.setActionHandler('stop', null)
+      try {
+        navigator.mediaSession.setPositionState?.()
+      } catch {
+        // ignore
+      }
     } catch {
       // ignore
     }
