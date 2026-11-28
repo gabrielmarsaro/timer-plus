@@ -13,7 +13,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## iPhone (Safari)
 
-**https://pristine-rift-7tdb8r2.shipstatic.com**
+**https://pristine-grid-ws4g3d4.shipstatic.com**
 
 1. Abra no **Safari**.  
 2. Desative o **mute lateral** se quiser alertas sonoros.  
@@ -22,7 +22,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 ## Android (APK) — versão **1.5.18**
 
-**https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/5c45ef0a1484fbb66bac9cacf7b58ed3b2d3c218/releases/timer-plus-debug.apk**
+**https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/cf44299de3ddae7b04b0a2a54ca5fc3112a97251/releases/timer-plus-debug.apk**
 
 1. Baixe no Chrome.  
 2. Permita **fontes desconhecidas** se pedir.  
@@ -30,7 +30,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 
 Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
 
-Página de download: https://pristine-rift-7tdb8r2.shipstatic.com/baixar.html
+Página de download: https://pristine-grid-ws4g3d4.shipstatic.com/baixar.html
 
 ## Novidades 1.5.18
 
