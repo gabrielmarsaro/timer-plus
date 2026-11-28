@@ -355,10 +355,16 @@ function runSafariAudibleCue(durationMs: number, play: () => void): void {
 
 /** Web Audio stand-in for spoken cues (Safari cannot TTS without killing Spotify forever). */
 function playSafariVoiceCue(text: string): void {
-  const lower = text.toLowerCase()
+  const lower = text.toLowerCase().trim()
   let freqs = [880, 1175]
   let osc: OscillatorType = 'square'
-  if (/exerc|esfor|work|ronda/.test(lower)) {
+  if (/^go\b/.test(lower)) {
+    freqs = [784, 988, 1319]
+    osc = 'square'
+  } else if (/10\s*segundos|\bdez\b/.test(lower)) {
+    freqs = [660, 660]
+    osc = 'square'
+  } else if (/exerc|esfor|work|ronda/.test(lower)) {
     freqs = [659, 880, 1175]
     osc = 'square'
   } else if (/descanso|rest|pausa/.test(lower)) {
@@ -370,9 +376,9 @@ function playSafariVoiceCue(text: string): void {
   } else if (/conclu|done|fim/.test(lower)) {
     freqs = [523, 659, 784, 1046]
     osc = 'square'
-  } else if (/^\d+$/.test(lower.trim())) {
-    const n = Number(lower.trim())
-    freqs = n === 1 ? [1320] : n === 2 ? [1100] : [990]
+  } else if (/^\d+$/.test(lower)) {
+    const n = Number(lower)
+    freqs = n === 1 ? [1320] : n === 2 ? [1100] : n === 3 ? [990] : [880]
     osc = 'square'
   }
 
@@ -695,12 +701,11 @@ export function announcePhase(phase: Phase | null, next?: Phase | null): void {
   // Com a música Tabata, GO/REST já vêm na trilha — não empilha bip de fase.
   if (!musicOwnsTempo) playSound('phase')
 
-  // Voz de início de fase (mesmo com música).
-  const label = phase.label.toLowerCase()
-  if (phase.kind === 'work' && phase.round) {
-    speak(`${label}. Ronda ${phase.round}`)
+  // Contagem 3-2-1 → Go no início do esforço.
+  if (phase.kind === 'work') {
+    speak('Go', true)
   } else {
-    speak(label)
+    speak(phase.label.toLowerCase())
   }
 
   // Sem “em seguida…” por cima da batida (dois tempos ao mesmo tempo).
@@ -726,24 +731,29 @@ export function onCountdownSecond(remaining: number, phase: Phase | null, warnin
   ensureAudioReady()
 
   // Respeitar música / trilha Tabata: só corta o tic-tac contínuo.
-  // Avisos de tempo (warning + 3-2-1) continuam.
+  // Voz: “10 segundos” → 3, 2, 1 → (Go no início da fase de esforço).
   const hushTicks = shouldSilenceAmbient() || isWorkoutMusicSessionActive()
-  const tabataTrackOwnsCountdown = isWorkoutMusicSessionActive() || isWorkoutMusicAudible()
 
   if (settings?.ticking && whole > 0 && !hushTicks) {
     playSound('tick')
     void vibrate('tick')
   }
 
-  if (warning > 0 && whole === warning) {
+  // Aviso aos 10s (fase precisa ser > 10 para não falar no primeiro segundo).
+  if (whole === 10 && phase.duration > 10) {
     playSound('warning')
     void vibrate('warning')
-    if (!tabataTrackOwnsCountdown) speak(`${warning} segundos`)
+    speak('10 segundos', true)
+  } else if (warning > 0 && whole === warning && warning !== 10) {
+    playSound('warning')
+    void vibrate('warning')
+    speak(`${warning} segundos`, true)
   }
 
-  if (whole <= 3 && whole >= 1 && !tabataTrackOwnsCountdown) {
+  // Contagem regressiva falada: 3, 2, 1.
+  if (whole <= 3 && whole >= 1) {
     void vibrate('warning')
-    speak(String(whole))
+    speak(String(whole), true)
   }
 }
 

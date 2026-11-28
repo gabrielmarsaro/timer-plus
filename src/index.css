@@ -171,6 +171,11 @@ button {
   animation: countdown-burst-pop 520ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
 }
 
+.countdown-burst-digit.is-go {
+  font-size: clamp(4.5rem, 22vw, 8.5rem);
+  letter-spacing: 0.06em;
+}
+
 @keyframes countdown-burst-pop {
   0% {
     opacity: 0;
