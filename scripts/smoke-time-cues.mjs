@@ -1,6 +1,5 @@
 /**
- * iPhone + Respeitar música: visual 3-2-1 burst (no audioSession / no Web Audio),
- * so Spotify is never paused.
+ * With Respeitar música: visual 3-2-1 + audible Web Audio cues (transient, not playback).
  */
 import { chromium } from 'playwright'
 import { createServer } from 'node:http'
@@ -80,7 +79,6 @@ await page.addInitScript(() => {
     htmlPlay: 0,
     sessionTypes: [],
     oscillatorStarts: 0,
-    burstDigits: [],
   }
 
   if (window.speechSynthesis) {
@@ -126,7 +124,6 @@ await page.addInitScript(() => {
       return osc
     }
   }
-
 })
 
 await page.goto('http://127.0.0.1:5184/', { waitUntil: 'networkidle' })
@@ -144,8 +141,6 @@ for (let i = 0; i < 25; i += 1) {
     const n = Number(text.trim())
     if (n >= 1 && n <= 3) seen.add(n)
   }
-  const probeLive = await page.evaluate(() => ({ ...window.__cueProbe }))
-  if (probeLive.sessionTypes.length || probeLive.oscillatorStarts) break
 }
 
 const probe = await page.evaluate(() => ({ ...window.__cueProbe }))
@@ -153,14 +148,15 @@ const uniqueBursts = [...seen]
 const errors = []
 if (probe.speechSpeak > 0) errors.push(`speechSynthesis used ${probe.speechSpeak}`)
 if (probe.htmlPlay > 0) errors.push(`HTMLAudio.play used ${probe.htmlPlay}`)
-if (probe.sessionTypes.length > 0) {
-  errors.push(`audioSession touched (would pause Spotify): ${probe.sessionTypes}`)
+if (probe.sessionTypes.includes('playback')) errors.push('playback steals Spotify')
+if (!probe.sessionTypes.includes('transient')) {
+  errors.push(`expected transient cues, got ${probe.sessionTypes}`)
 }
-if (probe.oscillatorStarts > 0) {
-  errors.push(`Web Audio tones fired (${probe.oscillatorStarts}) — Safari visual-only mode`)
+if (probe.oscillatorStarts < 3) {
+  errors.push(`expected Web Audio cues, got oscillatorStarts=${probe.oscillatorStarts}`)
 }
 if (uniqueBursts.length < 3) {
-  errors.push(`expected visual 3-2-1 burst, got ${JSON.stringify(uniqueBursts)}`)
+  errors.push(`expected visual 3-2-1, got ${JSON.stringify(uniqueBursts)}`)
 }
 
 if (errors.length) {

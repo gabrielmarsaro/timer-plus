@@ -20,7 +20,7 @@ Timer de treino HIIT/Tabata para **Android, iPhone, tablet e navegador**.
 3. Toque **INICIAR** — o tempo aparece em **A reproduzir** na tela bloqueada.  
 4. **Compartilhar** → **Adicionar à Tela de Início**.
 
-## Android (APK) — versão **1.5.16**
+## Android (APK) — versão **1.5.17**
 
 **https://raw.githubusercontent.com/gabrielmarsaro/timer-plus/a0c546ca75908aafc04ba304c2fd80c81637dfe1/releases/timer-plus-debug.apk**
 
@@ -32,10 +32,10 @@ Se der erro de pacote/assinatura: desinstale o app antigo e instale de novo.
 
 Página de download: https://diagonal-bot-53pzkbf.shipstatic.combaixar.html
 
-## Novidades 1.5.16
+## Novidades 1.5.17
 
-- Safari + Respeitar música: avisos **só visuais** (3-2-1 enorme + flash) — sem áudio, Spotify segue
-- Com Respeitar música: **3-2-1 e avisos de fase** voltam (só o tic-tac fica quieto)
+- Com Respeitar música: **bips 3-2-1 / fase** voltam (Android abaixa e devolve; iPhone bip + número grande)
+- Só o tic-tac e a trilha do app ficam quietos com música externa
 - **Safari:** abrir o app **não pausa** mais o Spotify (sem AudioContext/audioSession no load)
 - **Safari/iPhone:** avisos abaixam a música e voltam (sem `speechSynthesis`, que pausava o Spotify)
 - Avisos/voz **abaixam** a música de fundo e **devolvem** o volume (sem pausar o Spotify)

@@ -160,15 +160,6 @@ export function respectsExternalMusic(): boolean {
 }
 
 /**
- * iPhone Safari cannot play a cue and reliably give Spotify back.
- * Any audioSession / Web Audio / TTS tends to pause music for good.
- * In that mode we signal with UI only (burst + flash).
- */
-export function safariVisualCuesOnly(): boolean {
-  return respectsExternalMusic() && isAppleTouchWeb()
-}
-
-/**
  * Best-effort: other music apps holding audio focus.
  * Never create/resume AudioContext just to probe — that pauses Spotify.
  */
@@ -251,10 +242,11 @@ function unlockWebAudioOnly(): void {
 export function unlockFeedback(): void {
   if (respectsExternalMusic()) {
     unlocked = true
+    // Hush continuous ticks / Tabata BGM while Spotify may be playing.
     externalMusic = true
     setExternalMusicBlocked(true)
-    // Safari: do not touch AudioContext at all — resume/play pauses Spotify.
-    if (!isAppleTouchWeb()) unlockWebAudioOnly()
+    // Still unlock Web Audio so 3-2-1 / phase beeps can play (transient duck).
+    unlockWebAudioOnly()
     return
   }
 
@@ -342,9 +334,7 @@ function releaseSafariCueSession(): void {
 }
 
 function runSafariAudibleCue(durationMs: number, play: () => void): void {
-  // With Respeitar música on iPhone we never take the audio session.
-  if (safariVisualCuesOnly()) return
-
+  // Notification-style session: should duck/mix rather than steal Spotify forever.
   setAudioSession('transient')
   void resumeForAlert().then((ctx) => {
     if (ctx?.state === 'suspended') {
@@ -541,11 +531,9 @@ function playSound(kind: SoundKind): void {
     return
   }
 
-  if (safariVisualCuesOnly()) return
-
-  // Respect music on other web: transient tones, then release.
+  // Respect music on Safari/web: transient Web Audio beeps + visual 3-2-1 backup.
   const plan = alertTonePlan(kind, soundType)
-  const boost = Math.min(1, plan.gain * 1.35)
+  const boost = Math.min(1, plan.gain * 1.45)
   runSafariAudibleCue(Math.round(plan.duration * 1000) + 220, () => {
     tone(plan.freqs, plan.duration, plan.osc, boost)
   })
@@ -590,26 +578,7 @@ export function speak(text: string, force = false): void {
     return
   }
 
-  // Safari/iPhone + Respeitar música: no audio APIs (Spotify would stop). UI handles cues.
-  if (safariVisualCuesOnly()) {
-    return
-  }
-
-  // Other Apple path without ducking already handled; remaining respect+web uses tones.
-  if (respect && isAppleTouchWeb()) {
-    speakChain = speakChain
-      .catch(() => undefined)
-      .then(
-        () =>
-          new Promise<void>((resolve) => {
-            playSafariVoiceCue(normalized)
-            window.setTimeout(resolve, 700)
-          }),
-      )
-    return
-  }
-
-  // Other web + respect (desktop Chrome etc.): still avoid HTMLAudio; TTS may duck or pause.
+  // Safari / web + Respeitar música: beep callouts (not speechSynthesis — that kills Spotify).
   if (respect) {
     speakChain = speakChain
       .catch(() => undefined)

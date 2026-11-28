@@ -140,8 +140,8 @@ export function GeneralSettingsModal({
           <div>
             <span>RESPEITAR MÚSICA</span>
             <small>
-              NO IPHONE (SAFARI) OS AVISOS SÃO VISUAIS (NÚMERO GRANDE + FLASH) — QUALQUER BIP
-              PARA O SPOTIFY. NO ANDROID O APP ABAIXA A MÚSICA E DEVOLVE
+              TIRA O TIC-TAC E A TRILHA DO APP. MANTÉM BIPS 3-2-1 / FASE (NO ANDROID ABAIXA A
+              MÚSICA; NO IPHONE BIP + NÚMERO NA TELA)
             </small>
           </div>
           <button

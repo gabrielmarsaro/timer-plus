@@ -1,5 +1,6 @@
 /**
- * iPhone Safari + Respeitar música: INICIAR must not touch audioSession / speech / HTMLAudio.
+ * iPhone + Respeitar música: no speechSynthesis / HTMLAudio / playback;
+ * transient Web Audio cues are OK.
  */
 import { chromium } from 'playwright'
 import { createServer } from 'node:http'
@@ -67,7 +68,6 @@ await page.addInitScript(() => {
     htmlPlay: 0,
     sessionTypes: [],
     mediaPlaying: 0,
-    audioContextNew: 0,
   }
 
   const speech = window.speechSynthesis
@@ -100,24 +100,11 @@ await page.addInitScript(() => {
     },
   })
 
-  const OriginalAC = window.AudioContext || window.webkitAudioContext
-  if (OriginalAC) {
-    const Patched = function AudioContextPatched(...args) {
-      window.__safariProbe.audioContextNew += 1
-      return new OriginalAC(...args)
-    }
-    Patched.prototype = OriginalAC.prototype
-    Object.setPrototypeOf(Patched, OriginalAC)
-    window.AudioContext = Patched
-    window.webkitAudioContext = Patched
-  }
-
   if (!navigator.mediaSession) {
     // @ts-expect-error stub
     navigator.mediaSession = {}
   }
-  const ms = navigator.mediaSession
-  Object.defineProperty(ms, 'playbackState', {
+  Object.defineProperty(navigator.mediaSession, 'playbackState', {
     configurable: true,
     get() {
       return this._ps || 'none'
@@ -135,11 +122,13 @@ await page.waitForTimeout(1200)
 
 const probe = await page.evaluate(() => ({ ...window.__safariProbe }))
 const errors = []
-if (probe.speechSpeak > 0) errors.push(`speechSynthesis.speak called ${probe.speechSpeak}×`)
-if (probe.htmlPlay > 0) errors.push(`HTMLAudio.play called ${probe.htmlPlay}×`)
-if (probe.mediaPlaying > 0) errors.push(`mediaSession playing set ${probe.mediaPlaying}×`)
-if (probe.sessionTypes.length > 0) errors.push(`audioSession set: ${probe.sessionTypes}`)
-if (probe.audioContextNew > 0) errors.push(`AudioContext created ${probe.audioContextNew}×`)
+if (probe.speechSpeak > 0) errors.push(`speechSynthesis.speak ${probe.speechSpeak}`)
+if (probe.htmlPlay > 0) errors.push(`HTMLAudio.play ${probe.htmlPlay}`)
+if (probe.mediaPlaying > 0) errors.push(`mediaSession playing ${probe.mediaPlaying}`)
+if (probe.sessionTypes.includes('playback')) errors.push('playback used')
+if (!probe.sessionTypes.includes('transient')) {
+  errors.push(`expected transient after start, got ${probe.sessionTypes}`)
+}
 
 if (errors.length) {
   console.error(JSON.stringify({ probe, errors }, null, 2))
